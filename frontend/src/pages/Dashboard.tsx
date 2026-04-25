@@ -51,6 +51,13 @@ export default function Dashboard() {
 
     useEffect(() => {
         let cancelled = false;
+        if (selectedJdId == null) {
+            setLoading(false);
+            setResumes([]);
+            setTotal(0);
+            return;
+        }
+
         setLoading(true);
         api.listResumes({
             jdId: selectedJdId,
@@ -94,9 +101,7 @@ export default function Dashboard() {
         setStatusUpdating(id);
         try {
             const updated = await api.updateResumeStatus(id, status);
-            setResumes((prev) =>
-                prev.map((r) => (r.id === id ? updated : r)),
-            );
+            setResumes((prev) => prev.map((r) => (r.id === id ? updated : r)));
         } finally {
             setStatusUpdating(null);
         }
@@ -104,11 +109,12 @@ export default function Dashboard() {
 
     const pageStart = total === 0 ? 0 : offset + 1;
     const pageEnd = Math.min(offset + PAGE_SIZE, total);
-    const hasPrev = offset > 0;
-    const hasNext = offset + PAGE_SIZE < total;
+    const rankingsVisible = selectedJdId != null;
+    const hasPrev = rankingsVisible && offset > 0;
+    const hasNext = rankingsVisible && offset + PAGE_SIZE < total;
 
     const selectedJdLabel = useMemo(() => {
-        if (selectedJdId == null) return 'All JDs';
+        if (selectedJdId == null) return 'No JD selected';
         const jd = jds.find((j) => j.id === selectedJdId);
         return jd ? jd.title : `JD #${selectedJdId}`;
     }, [selectedJdId, jds]);
@@ -118,7 +124,9 @@ export default function Dashboard() {
             <div className="flex items-baseline justify-between">
                 <h1 className="text-2xl font-semibold">Candidates</h1>
                 <span className="text-sm text-slate-500">
-                    {total} total · ranking by score
+                    {rankingsVisible
+                        ? `${total} total · ranking by score`
+                        : 'Select a JD to view rankings'}
                 </span>
             </div>
 
@@ -127,9 +135,14 @@ export default function Dashboard() {
                     <select
                         className="select"
                         value={selectedJdId ?? ''}
+                        disabled={jds.length === 0}
                         onChange={(e) => onChangeJd(e.target.value)}
                     >
-                        <option value="">All JDs</option>
+                        <option value="">
+                            {jds.length === 0
+                                ? 'No JDs available'
+                                : 'Select JD'}
+                        </option>
                         {jds.map((jd) => (
                             <option key={jd.id} value={jd.id}>
                                 {jd.title}
@@ -141,6 +154,7 @@ export default function Dashboard() {
                     <select
                         className="select"
                         value={tierFilter}
+                        disabled={!rankingsVisible}
                         onChange={(e) => onChangeTier(e.target.value)}
                     >
                         <option value="">All tiers</option>
@@ -155,6 +169,7 @@ export default function Dashboard() {
                     <select
                         className="select"
                         value={statusFilter}
+                        disabled={!rankingsVisible}
                         onChange={(e) => onChangeStatus(e.target.value)}
                     >
                         <option value="">All statuses</option>
@@ -265,7 +280,19 @@ export default function Dashboard() {
                             </td>
                         </tr>
                     ))}
-                    {!loading && resumes.length === 0 && (
+                    {!loading && !rankingsVisible && (
+                        <tr>
+                            <td
+                                colSpan={10}
+                                className="px-4 py-6 text-center text-slate-400"
+                            >
+                                {jds.length === 0
+                                    ? 'No job descriptions available yet.'
+                                    : 'Select a job description to view rankings.'}
+                            </td>
+                        </tr>
+                    )}
+                    {!loading && rankingsVisible && resumes.length === 0 && (
                         <tr>
                             <td
                                 colSpan={10}
@@ -275,7 +302,7 @@ export default function Dashboard() {
                             </td>
                         </tr>
                     )}
-                    {loading && resumes.length === 0 && (
+                    {loading && rankingsVisible && resumes.length === 0 && (
                         <tr>
                             <td
                                 colSpan={10}
@@ -290,11 +317,15 @@ export default function Dashboard() {
 
             <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">
-                    {total === 0
-                        ? 'No results'
-                        : `Showing ${pageStart}–${pageEnd} of ${total} for ${selectedJdLabel}${
-                              tierFilter ? ` · ${tierFilter}` : ''
-                          }${statusFilter ? ` · ${statusFilter}` : ''}`}
+                    {!rankingsVisible
+                        ? jds.length === 0
+                            ? 'No job descriptions available.'
+                            : 'Select a JD to see rankings.'
+                        : total === 0
+                          ? 'No results'
+                          : `Showing ${pageStart}–${pageEnd} of ${total} for ${selectedJdLabel}${
+                                tierFilter ? ` · ${tierFilter}` : ''
+                            }${statusFilter ? ` · ${statusFilter}` : ''}`}
                 </span>
                 <div className="flex gap-3">
                     <button

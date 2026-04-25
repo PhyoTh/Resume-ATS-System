@@ -56,10 +56,8 @@ def _normalize_skill_list(skills: list, skill_map: dict[str, str]) -> list[str]:
 
 
 def normalize_extraction(extraction: dict, db: Session) -> dict:
-    """Mutate + return extraction with skills / institution / degree normalized."""
+    """Mutate + return extraction with deterministic skill normalization."""
     skill_map = load_alias_map(db, "skill")
-    uni_map = load_alias_map(db, "university")
-    degree_map = load_alias_map(db, "degree")
 
     if isinstance(extraction.get("technical_skills"), list):
         extraction["technical_skills"] = _normalize_skill_list(
@@ -70,11 +68,6 @@ def normalize_extraction(extraction: dict, db: Session) -> dict:
         for e in extraction["education"]:
             if not isinstance(e, dict):
                 continue
-            inst = e.get("institution")
-            if isinstance(inst, str):
-                e["institution"] = uni_map.get(inst.strip().lower(), inst.strip())
-            if isinstance(e.get("degree"), str):
-                e["degree"] = degree_map.get(e["degree"].strip().lower(), e["degree"].strip())
             # Legacy shape: graduation_date → end_date.
             if "graduation_date" in e and "end_date" not in e:
                 e["end_date"] = e.pop("graduation_date")

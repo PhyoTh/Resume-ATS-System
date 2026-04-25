@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
+import {
+    UNSAFE_NavigationContext,
+    useNavigate,
+    useParams,
+} from 'react-router-dom';
 import {
     api,
     Contact,
@@ -28,8 +32,8 @@ function normalizeProject(p: unknown): ProjectEntry {
     const tags = Array.isArray(raw.tags)
         ? (raw.tags as string[])
         : Array.isArray(raw.technologies)
-        ? (raw.technologies as string[])
-        : [];
+          ? (raw.technologies as string[])
+          : [];
     let bullets: string[] = [];
     if (Array.isArray(raw.description_bullets)) {
         bullets = raw.description_bullets as string[];
@@ -64,8 +68,8 @@ function normalizeEducation(e: unknown): EducationEntry {
             typeof raw.institution === 'string'
                 ? raw.institution
                 : typeof raw.university === 'string'
-                ? (raw.university as string)
-                : null,
+                  ? (raw.university as string)
+                  : null,
         degree: typeof raw.degree === 'string' ? raw.degree : null,
         major: typeof raw.major === 'string' ? raw.major : null,
         gpa: typeof raw.gpa === 'string' ? raw.gpa : null,
@@ -92,9 +96,7 @@ function normalizeExperience(x: unknown): ExperienceEntry {
     if (!x || typeof x !== 'object') return { ...EMPTY_EXPERIENCE };
     const raw = x as Record<string, unknown>;
     let start: string | null =
-        typeof raw.start_date === 'string'
-            ? (raw.start_date as string)
-            : null;
+        typeof raw.start_date === 'string' ? (raw.start_date as string) : null;
     let end: string | null =
         typeof raw.end_date === 'string' ? (raw.end_date as string) : null;
     if (!start && !end && typeof raw.dates === 'string') {
@@ -145,7 +147,9 @@ function normalizeExtraction(
         experience: Array.isArray(e.experience)
             ? e.experience.map(normalizeExperience)
             : [],
-        projects: Array.isArray(e.projects) ? e.projects.map(normalizeProject) : [],
+        projects: Array.isArray(e.projects)
+            ? e.projects.map(normalizeProject)
+            : [],
         technical_skills: Array.isArray(e.technical_skills)
             ? e.technical_skills
             : [],
@@ -155,6 +159,29 @@ function normalizeExtraction(
         concerns: Array.isArray(e.concerns) ? e.concerns : [],
         custom: e.custom ?? {},
     };
+}
+
+type NavigationTx = { retry: () => void };
+type BlockNavigator = {
+    block?: (blocker: (tx: NavigationTx) => void) => () => void;
+};
+
+function useBrowserNavigationBlock(when: boolean, message: string) {
+    const { navigator } = useContext(UNSAFE_NavigationContext);
+
+    useEffect(() => {
+        if (!when) return;
+        const nav = navigator as BlockNavigator;
+        if (typeof nav.block !== 'function') return;
+
+        const unblock = nav.block((tx) => {
+            const confirmed = window.confirm(message);
+            if (!confirmed) return;
+            unblock();
+            tx.retry();
+        });
+        return unblock;
+    }, [navigator, when, message]);
 }
 
 export default function Verify() {
@@ -171,20 +198,48 @@ export default function Verify() {
     const [scoreJdId, setScoreJdId] = useState<number | ''>('');
     const [scoring, setScoring] = useState(false);
     const [scoreError, setScoreError] = useState<string | null>(null);
+    const [initialDraftJson, setInitialDraftJson] = useState('');
+    const [initialCustomText, setInitialCustomText] = useState('{}');
+    const [allowNavigation, setAllowNavigation] = useState(false);
 
     useEffect(() => {
         if (!id) return;
         api.getResume(Number(id)).then((r) => {
             const next = normalizeExtraction(r.extraction, r);
+            const nextCustomText = JSON.stringify(next.custom ?? {}, null, 2);
             setResume(r);
             setDraft(next);
-            setCustomText(JSON.stringify(next.custom ?? {}, null, 2));
+            setCustomText(nextCustomText);
             setScoreJdId(r.scored_against_jd_id ?? '');
+            setInitialDraftJson(JSON.stringify(next));
+            setInitialCustomText(nextCustomText);
+            setAllowNavigation(false);
         });
         api.listJDs()
             .then(setJds)
             .catch(() => setJds([]));
     }, [id]);
+
+    const draftJson = draft ? JSON.stringify(draft) : '';
+    const hasUnsavedChanges =
+        Boolean(resume && draft) &&
+        (draftJson !== initialDraftJson || customText !== initialCustomText);
+    const shouldWarnBeforeLeave =
+        hasUnsavedChanges && !saving && !deleting && !allowNavigation;
+    useBrowserNavigationBlock(
+        shouldWarnBeforeLeave,
+        'You have unsaved changes. Leave this page without saving?',
+    );
+
+    useEffect(() => {
+        if (!shouldWarnBeforeLeave) return;
+        const onBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', onBeforeUnload);
+        return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    }, [shouldWarnBeforeLeave]);
 
     if (!resume || !draft) return <div>Loading…</div>;
 
@@ -224,6 +279,7 @@ export default function Verify() {
                 applyAliasLearning,
             );
             setResume(updated);
+            setAllowNavigation(true);
             nav('/upload');
         } finally {
             setSaving(false);
@@ -250,6 +306,7 @@ export default function Verify() {
         setDeleting(true);
         try {
             await api.deleteResume(resume.id);
+            setAllowNavigation(true);
             nav('/upload');
         } finally {
             setDeleting(false);
@@ -396,8 +453,7 @@ export default function Verify() {
                             <span className="font-medium">
                                 {Math.round(resume.score)}
                             </span>
-                            {resume.match_tier &&
-                                ` · ${resume.match_tier}`}
+                            {resume.match_tier && ` · ${resume.match_tier}`}
                         </div>
                     )}
                 </Group>
@@ -485,9 +541,9 @@ export default function Verify() {
 
                 <Group title="Concerns / questions to ask the candidate">
                     <p className="text-xs text-slate-500 -mt-1 mb-1">
-                        Neutral observations the recruiter may want to ask
-                        about (e.g. timeline gaps, very short tenures). Does
-                        not affect scoring.
+                        Neutral observations the recruiter may want to ask about
+                        (e.g. timeline gaps, very short tenures). Does not
+                        affect scoring.
                     </p>
                     <BulletsEditor
                         bullets={draft.concerns ?? []}
@@ -830,7 +886,10 @@ function ExperienceEditor({
     return (
         <div className="space-y-4">
             {items.map((exp, i) => (
-                <div key={i} className="border rounded p-3 space-y-2 bg-slate-50">
+                <div
+                    key={i}
+                    className="border rounded p-3 space-y-2 bg-slate-50"
+                >
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-slate-500">
                             Entry #{i + 1}
@@ -897,9 +956,7 @@ function ExperienceEditor({
             ))}
             <button
                 className="text-sm text-blue-600 hover:underline"
-                onClick={() =>
-                    onChange([...items, { ...EMPTY_EXPERIENCE }])
-                }
+                onClick={() => onChange([...items, { ...EMPTY_EXPERIENCE }])}
             >
                 + Add experience
             </button>
@@ -927,7 +984,10 @@ function ProjectEditor({
     return (
         <div className="space-y-3">
             {items.map((proj, i) => (
-                <div key={i} className="border rounded p-3 space-y-2 bg-slate-50">
+                <div
+                    key={i}
+                    className="border rounded p-3 space-y-2 bg-slate-50"
+                >
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-slate-500">
                             Entry #{i + 1}

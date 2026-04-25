@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.models import (
     CorrectionLog,
     CustomField,
+    CustomFieldValue,
     JobDescription,
     Resume,
     ResumeProcessingTask,
@@ -127,12 +128,32 @@ def delete_jd(jd_id: int, db: Session = Depends(get_db)):
         db.query(Resume).filter(Resume.scored_against_jd_id == jd_id).all()
     )
     resume_ids = [r.id for r in resumes]
+
+    custom_fields = (
+        db.query(CustomField).filter(
+            CustomField.job_description_id == jd_id).all()
+    )
+    custom_field_ids = [f.id for f in custom_fields]
+
+    if resume_ids:
+        db.query(CustomFieldValue).filter(
+            CustomFieldValue.resume_id.in_(resume_ids)
+        ).delete(synchronize_session=False)
     if resume_ids:
         # CorrectionLog has no relationship cascade; clear it explicitly so
         # the FK-on SQLite enforcement doesn't reject the resume deletes.
         db.query(CorrectionLog).filter(
             CorrectionLog.resume_id.in_(resume_ids)
         ).delete(synchronize_session=False)
+
+    if custom_field_ids:
+        db.query(CustomFieldValue).filter(
+            CustomFieldValue.custom_field_id.in_(custom_field_ids)
+        ).delete(synchronize_session=False)
+        db.query(CustomField).filter(
+            CustomField.id.in_(custom_field_ids)
+        ).delete(synchronize_session=False)
+
     for r in resumes:
         # Best-effort: remove the file from disk before the DB row goes.
         if r.storage_path:
@@ -227,7 +248,8 @@ def create_jd_custom_field(
         .first()
     )
     if clash:
-        raise HTTPException(409, f"a custom field named {name!r} already exists for this JD")
+        raise HTTPException(
+            409, f"a custom field named {name!r} already exists for this JD")
 
     row = CustomField(
         name=name,

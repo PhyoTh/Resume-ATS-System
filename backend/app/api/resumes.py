@@ -32,7 +32,6 @@ from app.db.session import SessionLocal, get_db
 from app.extraction.parse_doc import guess_mime
 from app.extraction.pipeline import extract_async
 from app.learning.aliases import (
-    learn_from_education_diff,
     learn_from_skill_diff,
     log_correction,
 )
@@ -465,7 +464,7 @@ def list_resumes(
         rows = [r for r in rows if match_tier_for_score(r.score) == tier]
 
     total = len(rows)
-    page = rows[offset : offset + limit]
+    page = rows[offset: offset + limit]
     task_map = _latest_task_map(db, [r.id for r in page])
     return ResumeListOut(
         items=[ResumeOut.from_model(r, task_map.get(r.id)) for r in page],
@@ -543,7 +542,8 @@ def score_resume(
             extraction,
         )
     except Exception as e:
-        log.warning("retroactive scoring failed for resume_id=%s: %s", resume_id, e)
+        log.warning(
+            "retroactive scoring failed for resume_id=%s: %s", resume_id, e)
         raise HTTPException(502, f"scoring failed: {e}")
 
     r.score = result.score
@@ -653,18 +653,14 @@ def verify(resume_id: int, body: VerifyBody, db: Session = Depends(get_db)):
         raise HTTPException(404)
 
     raw = r.extraction_raw_json or {}
+    baseline = r.extraction_edited_json or raw
     edited = body.extraction
 
     if body.apply_alias_learning:
         learn_from_skill_diff(
             db,
-            raw.get("technical_skills", []),
+            baseline.get("technical_skills", []),
             edited.get("technical_skills", []),
-        )
-        learn_from_education_diff(
-            db,
-            raw.get("education", []),
-            edited.get("education", []),
         )
 
     diffed_keys = (

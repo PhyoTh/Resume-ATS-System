@@ -12,6 +12,10 @@ parsing is being tuned.
 
 Full design rationale lives in [DESIGN.md](DESIGN.md).
 
+## Demo Video
+
+- [Watch the demo video](PASTE_DEMO_VIDEO_URL_HERE)
+
 ---
 
 ## Prerequisites
@@ -104,15 +108,15 @@ You should see `Local: http://localhost:5173`. Open that URL in your browser.
    progress (`Reading document` → `AI extracting data` → `AI scoring` →
    `Done` / `Rejected document` / `Failed`).
 5. Background worker runs:
-   1. Document parse (text or image parts) — `parse_doc.py`.
-   2. LLM extraction with the system prompt assembled from the seed alias
-      dictionary, learned aliases, and any recruiter-defined custom fields.
-   3. Defensive defaults + nested-wrapper unwrap.
-   4. Deterministic alias normalization (skills, institutions, degrees) and
-      backwards-compat migration of older field shapes.
-   5. Validity gate: if `is_resume` is false OR
-      `validity_confidence < threshold (default 0.5)`, the row is marked
-      **Rejected document**; otherwise scoring runs against the chosen JD.
+    1. Document parse (text or image parts) — `parse_doc.py`.
+    2. LLM extraction with the system prompt assembled from the seed alias
+       dictionary, learned aliases, and any recruiter-defined custom fields.
+    3. Defensive defaults + nested-wrapper unwrap.
+    4. Deterministic alias normalization (skills, institutions, degrees) and
+       backwards-compat migration of older field shapes.
+    5. Validity gate: if `is_resume` is false OR
+       `validity_confidence < threshold (default 0.5)`, the row is marked
+       **Rejected document**; otherwise scoring runs against the chosen JD.
 6. Frontend lets you **Verify / edit** any resume. Saving updates the
    extracted JSON and (opt-in via checkbox) feeds skill / institution / degree
    corrections back into the alias table.
@@ -124,68 +128,70 @@ in the order the model produces them):
 
 ```jsonc
 {
-  "is_resume": true,                   // false for invoices, blank pages, etc.
-  "validity_reason": "string",         // model writes its reasoning FIRST
-  "validity_confidence": 0.0,          // 0..1, used to filter via the threshold
-                                       // (not surfaced as a form field — only
-                                       // visible in the raw-JSON expander)
+    "is_resume": true, // false for invoices, blank pages, etc.
+    "validity_reason": "string", // model writes its reasoning FIRST
+    "validity_confidence": 0.0, // 0..1, used to filter via the threshold
+    // (not surfaced as a form field — only
+    // visible in the raw-JSON expander)
 
-  "contact": {
-    "name": "First Last",
-    "email": "email@example.com",
-    "phone": "123-456-7890",
-    "linkedin": "url",                 // Optional (PDF link text often hides URL)
-    "github": "url",                   // Optional
-    "website": "johndoe.dev"           // Optional — personal site / portfolio
-                                       // (Kaggle, Behance, etc.) for non-SWE roles
-  },
+    "contact": {
+        "name": "First Last",
+        "email": "email@example.com",
+        "phone": "123-456-7890",
+        "linkedin": "url", // Optional (PDF link text often hides URL)
+        "github": "url", // Optional
+        "website": "johndoe.dev", // Optional — personal site / portfolio
+        // (Kaggle, Behance, etc.) for non-SWE roles
+    },
 
-  "education": [                        // there might be more than one
-    {
-      "institution": "University Name",
-      "degree": "Bachelor of Science",  // expanded from B.S. / B.A. / etc.
-      "major": "Computer Science",      // separate from degree; null if absent
-      "gpa": "3.6 / 4.0",               // optional, key always present
-      "start_date": null,               // optional; if only one date is shown
-      "end_date": "June 2026"           // it is treated as the end date
-    }
-  ],
+    "education": [
+        // there might be more than one
+        {
+            "institution": "University Name",
+            "degree": "Bachelor of Science", // expanded from B.S. / B.A. / etc.
+            "major": "Computer Science", // separate from degree; null if absent
+            "gpa": "3.6 / 4.0", // optional, key always present
+            "start_date": null, // optional; if only one date is shown
+            "end_date": "June 2026", // it is treated as the end date
+        },
+    ],
 
-  "experience": [
-    {
-      "company": "Company Name",
-      "role": "Job Title",
-      "start_date": "January 2026",     // dates normalized to "<Month> <Year>"
-      "end_date": "Present",            // or year-only when no month is given
-      "description_bullets": ["bullet 1", "bullet 2"]
-    }
-  ],
+    "experience": [
+        {
+            "company": "Company Name",
+            "role": "Job Title",
+            "start_date": "January 2026", // dates normalized to "<Month> <Year>"
+            "end_date": "Present", // or year-only when no month is given
+            "description_bullets": ["bullet 1", "bullet 2"],
+        },
+    ],
 
-  "projects": [
-    {
-      "name": "Project Name",
-      "description_bullets": ["bullet 1", "bullet 2"], // parse all bullets
-                                                       // (not just the first)
-      "tags": ["React", "Node.js"]      // renamed from "technologies"; optional
-                                        // — empty list if the resume doesn't
-                                        // list a stack
-    }
-  ],
+    "projects": [
+        {
+            "name": "Project Name",
+            "description_bullets": ["bullet 1", "bullet 2"], // parse all bullets
+            // (not just the first)
+            "tags": ["React", "Node.js"], // renamed from "technologies"; optional
+            // — empty list if the resume doesn't
+            // list a stack
+        },
+    ],
 
-  "technical_skills": [],               // flat, soft-skills excluded
-  "awards": [],                         // optional, key always present, never invented
-  "certificates": [],                   // optional, key always present, never invented
+    "technical_skills": [], // flat, soft-skills excluded
+    "awards": [], // optional, key always present, never invented
+    "certificates": [], // optional, key always present, never invented
 
-  "calculated_yoe": 0.0,                // sum of professional experience durations
-                                        // ONLY (no projects / school / weighting).
-                                        // Internships count at full weight.
-                                        // Returned as a float (e.g. 0.8, 1.5).
-  "concerns": [                         // neutral notes for the recruiter to
-    "Gap of ~14 months between ..."     // follow up on during a phone screen
-  ],                                    // (timeline gaps, very short tenures,
-                                        // overlapping roles). Does NOT affect
-                                        // the score.
-  "custom": {}                          // recruiter-defined custom fields land here
+    "calculated_yoe": 0.0, // sum of professional experience durations
+    // ONLY (no projects / school / weighting).
+    // Internships count at full weight.
+    // Returned as a float (e.g. 0.8, 1.5).
+    "concerns": [
+        // neutral notes for the recruiter to
+        "Gap of ~14 months between ...", // follow up on during a phone screen
+    ], // (timeline gaps, very short tenures,
+    // overlapping roles). Does NOT affect
+    // the score.
+    "custom": {}, // recruiter-defined custom fields land here
 }
 ```
 
@@ -332,23 +338,23 @@ JD; that was removed once the dashboard learned to filter by JD.
 - Left: source preview (PDF iframe or image), filename, file link, raw JSON
   expander, **Delete resume** action.
 - Right: edit form. Each section sits in its own labeled card:
-  - **Contact** – name, email, phone, linkedin, github, website/portfolio.
-  - **Score against a JD** – if the resume was uploaded parse-only (no JD
-    selected) or you want to score it against a different JD, pick one from
-    the dropdown and hit *Score now*. Works for any non-rejected resume.
-  - **Calculated YoE** – numeric input.
-  - **Education** – one labeled row per field (Institution, Degree, Major,
-    GPA, Start date, End date) per entry, with add/remove.
-  - **Concerns** – neutral notes the LLM thinks the recruiter may want to
-    ask about (timeline gaps, very short tenures, overlapping roles).
-    Editable via the same `•` bullet editor. Does not affect scoring.
-  - **Experience** – Company, Role, Start date, End date, plus a bullet
-    editor that prefixes each row with `•` and lets you add / remove bullets
-    individually.
-  - **Projects** – Name, Tags, bullets (same `•` editor).
-  - **Technical skills** – comma-separated input.
-  - **Awards** / **Certificates** – bullet editors.
-  - **Custom fields JSON** – arbitrary recruiter schema extension.
+    - **Contact** – name, email, phone, linkedin, github, website/portfolio.
+    - **Score against a JD** – if the resume was uploaded parse-only (no JD
+      selected) or you want to score it against a different JD, pick one from
+      the dropdown and hit _Score now_. Works for any non-rejected resume.
+    - **Calculated YoE** – numeric input.
+    - **Education** – one labeled row per field (Institution, Degree, Major,
+      GPA, Start date, End date) per entry, with add/remove.
+    - **Concerns** – neutral notes the LLM thinks the recruiter may want to
+      ask about (timeline gaps, very short tenures, overlapping roles).
+      Editable via the same `•` bullet editor. Does not affect scoring.
+    - **Experience** – Company, Role, Start date, End date, plus a bullet
+      editor that prefixes each row with `•` and lets you add / remove bullets
+      individually.
+    - **Projects** – Name, Tags, bullets (same `•` editor).
+    - **Technical skills** – comma-separated input.
+    - **Awards** / **Certificates** – bullet editors.
+    - **Custom fields JSON** – arbitrary recruiter schema extension.
 - Alias learning is **opt-in** via a checkbox at the bottom. Saving without
   it just updates the extraction; saving with it teaches the alias table
   from any skill / institution / degree corrections.
@@ -391,26 +397,26 @@ SELECT id, title, is_active, created_at, updated_at FROM job_description;
 
 API endpoints worth knowing:
 
-- `GET    /api/jd`                            — list JDs (title + timestamps)
+- `GET    /api/jd` — list JDs (title + timestamps)
 - `GET    /api/jd/{id}`, `POST /api/jd`,
-  `PUT /api/jd/{id}`, `DELETE /api/jd/{id}`   — JD CRUD; delete cascades to all resumes scored against that JD
+  `PUT /api/jd/{id}`, `DELETE /api/jd/{id}` — JD CRUD; delete cascades to all resumes scored against that JD
 - `GET    /api/jd/{id}/custom_fields`,
-  `POST /api/jd/{id}/custom_fields`           — JD-scoped custom fields (only injected for resumes targeting that JD)
-- `POST   /api/jd/{id}/reextract`             — re-queue extraction for every resume under this JD (use after editing custom fields)
-- `GET    /api/resumes`                       — list resumes; query: `jd_id`, `status_filter`, `tier`, `limit`, `offset`. Returns `{items, total, limit, offset}`
-- `GET    /api/resumes/{id}`                  — single resume + extraction
-- `GET    /api/resumes/{id}/file`             — original uploaded bytes
-- `DELETE /api/resumes/{id}`                  — remove DB row + file
-- `POST   /api/resumes/upload`                — multipart upload, returns 202
-- `POST   /api/resumes/{id}/retry`            — re-queue extraction for a failed row (re-uses the stored file, returns 202)
-- `GET    /api/resumes/tasks/{task_id}`       — poll processing status
-- `PUT    /api/resumes/{id}/verify`           — save edits, optional alias learning
-- `POST   /api/resumes/{id}/score`            — retroactively (re)score against a chosen JD; body `{jd_id: int}`
-- `PUT    /api/resumes/{id}/status`           — update pipeline status (one of `Ready`, `Recruiter-Call`, `Round 1`, `Round 2`, `Final Round`, `Rejected`, `Awaiting Acceptance`, `Accepted`)
-- `GET    /api/resumes/_meta/statuses`        — list of allowed status values
-- `GET    /api/aliases`, `POST`, `DELETE`     — alias CRUD
+  `POST /api/jd/{id}/custom_fields` — JD-scoped custom fields (only injected for resumes targeting that JD)
+- `POST   /api/jd/{id}/reextract` — re-queue extraction for every resume under this JD (use after editing custom fields)
+- `GET    /api/resumes` — list resumes; query: `jd_id`, `status_filter`, `tier`, `limit`, `offset`. Returns `{items, total, limit, offset}`
+- `GET    /api/resumes/{id}` — single resume + extraction
+- `GET    /api/resumes/{id}/file` — original uploaded bytes
+- `DELETE /api/resumes/{id}` — remove DB row + file
+- `POST   /api/resumes/upload` — multipart upload, returns 202
+- `POST   /api/resumes/{id}/retry` — re-queue extraction for a failed row (re-uses the stored file, returns 202)
+- `GET    /api/resumes/tasks/{task_id}` — poll processing status
+- `PUT    /api/resumes/{id}/verify` — save edits, optional alias learning
+- `POST   /api/resumes/{id}/score` — retroactively (re)score against a chosen JD; body `{jd_id: int}`
+- `PUT    /api/resumes/{id}/status` — update pipeline status (one of `Ready`, `Recruiter-Call`, `Round 1`, `Round 2`, `Final Round`, `Rejected`, `Awaiting Acceptance`, `Accepted`)
+- `GET    /api/resumes/_meta/statuses` — list of allowed status values
+- `GET    /api/aliases`, `POST`, `DELETE` — alias CRUD
 - `GET    /api/custom_fields`, `POST`, `DELETE` — custom-field CRUD
-- `GET    /api/dashboard/stats`               — aggregate counts (legacy, no longer rendered on the Dashboard)
+- `GET    /api/dashboard/stats` — aggregate counts (legacy, no longer rendered on the Dashboard)
 
 ---
 

@@ -64,26 +64,6 @@ def learn_from_skill_diff(db: Session, raw_skills: list[str], edited_skills: lis
     return added
 
 
-def learn_from_education_diff(db: Session, raw_edu: list[dict], edited_edu: list[dict]) -> int:
-    added = 0
-    for raw, edited in zip(raw_edu or [], edited_edu or []):
-        if not isinstance(raw, dict) or not isinstance(edited, dict):
-            continue
-        # Education entries use `institution` in the new schema; older records
-        # may still carry `university`, so we accept either as the source field.
-        for source_key, kind in (
-            ("institution", "university"),
-            ("university", "university"),
-            ("degree", "degree"),
-        ):
-            rv, ev = raw.get(source_key), edited.get(source_key)
-            if isinstance(rv, str) and isinstance(ev, str):
-                if rv.strip() != ev.strip():
-                    _upsert_alias(db, rv, ev, kind=kind)
-                    added += 1
-    return added
-
-
 def log_correction(
     db: Session, resume_id: int, field_path: str, before: object, after: object
 ) -> None:
@@ -91,7 +71,8 @@ def log_correction(
         CorrectionLog(
             resume_id=resume_id,
             field_path=field_path,
-            before_value={"v": before} if not isinstance(before, dict) else before,
+            before_value={"v": before} if not isinstance(
+                before, dict) else before,
             after_value={"v": after} if not isinstance(after, dict) else after,
         )
     )
