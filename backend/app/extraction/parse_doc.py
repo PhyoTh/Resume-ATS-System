@@ -23,6 +23,34 @@ DOCX_MIMES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 MIN_TEXT_CHARS = 200  # below this we assume scanned PDF
+# Cap text body sent to the LLM. Claude sonnet has plenty of context but
+# pathologically long uploads (a multi-MB text dump) waste tokens for no
+# extraction signal — the resume content lives in the first few pages.
+MAX_TEXT_CHARS = 50_000
+
+
+def _neutral_framing(source_label: str) -> str:
+    """Frame the user message without asserting the file IS a resume.
+
+    The system prompt explicitly says the document MAY or MAY NOT be a
+    resume; framing the user message as "Resume (PDF):" contradicted that
+    and biased the model toward `is_resume=true` for non-resumes (recipes,
+    invoices, blank text dumps).
+    """
+    return (
+        f"Document uploaded by a recruiter ({source_label}). "
+        "The recruiter expects it to be a candidate resume; verify against "
+        "the schema and set is_resume=false if it is not."
+    )
+
+
+def _truncate(text: str) -> str:
+    if len(text) <= MAX_TEXT_CHARS:
+        return text
+    return (
+        text[:MAX_TEXT_CHARS]
+        + f"\n\n[...truncated at {MAX_TEXT_CHARS} characters...]"
+    )
 
 
 def guess_mime(path: Path) -> str:
@@ -87,18 +115,17 @@ def build_user_parts(path: Path, mime: str | None = None) -> list[dict]:
     mime = mime or guess_mime(path)
     parts: list[dict] = []
     if mime in IMAGE_MIMES:
-        parts.append(
-            text_part("The following image is the candidate's resume:"))
+        parts.append(text_part(_neutral_framing("image")))
         parts.append(image_part_from_path(path))
         return parts
     if mime in DOCX_MIMES:
-        text = parse_docx_text(path)
-        parts.append(text_part("Resume (DOCX, plain text):\n\n" + text))
+        text = _truncate(parse_docx_text(path))
+        parts.append(text_part(_neutral_framing("DOCX, text-extracted") + "\n\n" + text))
         return parts
     if mime in PDF_MIMES:
-        text = parse_pdf_text(path)
+        text = _truncate(parse_pdf_text(path))
         if len(text) >= MIN_TEXT_CHARS:
-            parts.append(text_part("Resume (PDF, extracted text):\n\n" + text))
+            parts.append(text_part(_neutral_framing("PDF, text-extracted") + "\n\n" + text))
             return parts
         # Scanned-looking PDF — rasterize first pages
         image_paths = rasterize_pdf(path)
@@ -106,21 +133,26 @@ def build_user_parts(path: Path, mime: str | None = None) -> list[dict]:
             # Last resort: give whatever text we did get
             parts.append(
                 text_part(
-                    "Resume (PDF, low-text-density, extraction may be incomplete):\n\n" + text
+                    _neutral_framing("PDF, low text density")
+                    + "\n\n"
+                    + text
                 )
             )
             return parts
         parts.append(
-            text_part("Resume (scanned PDF, images of first pages follow):"))
+            text_part(
+                _neutral_framing("scanned PDF, images of first pages follow")
+            )
+        )
         for p in image_paths:
             parts.append(image_part_from_path(p))
         return parts
     # Unknown — try as text
     try:
-        parts.append(text_part(path.read_text(
-            encoding="utf-8", errors="ignore")))
+        text = _truncate(path.read_text(encoding="utf-8", errors="ignore"))
+        parts.append(text_part(_neutral_framing(f"unknown type {mime}") + "\n\n" + text))
     except Exception:
-        parts.append(text_part(f"(could not parse file of type {mime})"))
+        parts.append(text_part(_neutral_framing(f"could not parse type {mime}")))
     return parts
 
 
@@ -134,40 +166,46 @@ async def build_user_parts_async(path: Path, mime: str | None = None) -> list[di
     parts: list[dict] = []
 
     if mime in IMAGE_MIMES:
-        parts.append(
-            text_part("The following image is the candidate's resume:"))
+        parts.append(text_part(_neutral_framing("image")))
         parts.append(await asyncio.to_thread(image_part_from_path, path))
         return parts
 
     if mime in DOCX_MIMES:
-        text = await asyncio.to_thread(parse_docx_text, path)
-        parts.append(text_part("Resume (DOCX, plain text):\n\n" + text))
+        text = _truncate(await asyncio.to_thread(parse_docx_text, path))
+        parts.append(text_part(_neutral_framing("DOCX, text-extracted") + "\n\n" + text))
         return parts
 
     if mime in PDF_MIMES:
-        text = await asyncio.to_thread(parse_pdf_text, path)
+        text = _truncate(await asyncio.to_thread(parse_pdf_text, path))
         if len(text) >= MIN_TEXT_CHARS:
-            parts.append(text_part("Resume (PDF, extracted text):\n\n" + text))
+            parts.append(text_part(_neutral_framing("PDF, text-extracted") + "\n\n" + text))
             return parts
 
         image_paths = await asyncio.to_thread(rasterize_pdf, path)
         if not image_paths:
             parts.append(
                 text_part(
-                    "Resume (PDF, low-text-density, extraction may be incomplete):\n\n" + text
+                    _neutral_framing("PDF, low text density")
+                    + "\n\n"
+                    + text
                 )
             )
             return parts
 
         parts.append(
-            text_part("Resume (scanned PDF, images of first pages follow):"))
+            text_part(
+                _neutral_framing("scanned PDF, images of first pages follow")
+            )
+        )
         for image_path in image_paths:
             parts.append(await asyncio.to_thread(image_part_from_path, image_path))
         return parts
 
     try:
-        text = await asyncio.to_thread(path.read_text, encoding="utf-8", errors="ignore")
-        parts.append(text_part(text))
+        text = _truncate(
+            await asyncio.to_thread(path.read_text, encoding="utf-8", errors="ignore")
+        )
+        parts.append(text_part(_neutral_framing(f"unknown type {mime}") + "\n\n" + text))
     except Exception:
-        parts.append(text_part(f"(could not parse file of type {mime})"))
+        parts.append(text_part(_neutral_framing(f"could not parse type {mime}")))
     return parts

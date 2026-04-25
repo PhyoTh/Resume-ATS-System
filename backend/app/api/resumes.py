@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -65,6 +66,28 @@ RESUME_STATUSES = (
     "Awaiting Acceptance",
     "Accepted",
 )
+
+# Upload safety knobs.
+# 10 MB is well above the largest real-world resume (typical PDF resumes
+# are 100-300 KB; an image-heavy multi-page CV maxes out around 5 MB).
+# Anything bigger is almost certainly a mis-upload or a deliberate DoS.
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+ALLOWED_UPLOAD_SUFFIXES = {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".txt", ".md"}
+
+
+def _safe_suffix(filename: str | None) -> str:
+    """Pull a safe extension from a user-supplied filename.
+
+    `Path(...).suffix` only returns the last dotted segment so path
+    traversal characters in the original filename can't leak into the
+    storage path, but the suffix itself can still be `.exe`, `.zip`, or
+    nonsense — caller decides whether to allow it.
+    """
+    if not filename:
+        return ""
+    suffix = Path(filename).suffix.lower()
+    # Path separator chars in the suffix would be alarming; strip just in case.
+    return re.sub(r"[\\/:]", "", suffix)
 
 
 def _is_rejected(is_resume: bool, validity_confidence: float) -> bool:
@@ -364,9 +387,26 @@ async def upload(
     db: Session = Depends(get_db),
 ):
     settings = get_settings()
-    suffix = Path(file.filename or "upload").suffix
+    suffix = _safe_suffix(file.filename) or ".bin"
+    if suffix not in ALLOWED_UPLOAD_SUFFIXES:
+        raise HTTPException(
+            415,
+            f"file type {suffix!r} not allowed; expected one of "
+            f"{sorted(ALLOWED_UPLOAD_SUFFIXES)}",
+        )
+
+    contents = await file.read()
+    if len(contents) == 0:
+        raise HTTPException(422, "uploaded file is empty")
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            413,
+            f"file is too large ({len(contents)} bytes); "
+            f"limit is {MAX_UPLOAD_BYTES} bytes",
+        )
+
     storage_path = settings.uploads_dir / f"{uuid.uuid4().hex}{suffix}"
-    storage_path.write_bytes(await file.read())
+    storage_path.write_bytes(contents)
 
     selected_jd = _load_selected_jd(db, jd_id)
 
@@ -693,6 +733,41 @@ def verify(resume_id: int, body: VerifyBody, db: Session = Depends(get_db)):
     db.refresh(r)
     task = _latest_task_for_resume(db, resume_id)
     return ResumeOut.from_model(r, task)
+
+
+@router.delete("")
+def delete_rejected_resumes(db: Session = Depends(get_db)):
+    """Bulk-delete every resume that the validity gate marked as rejected.
+
+    "Rejected" = `is_resume=false` OR `validity_confidence < threshold`,
+    using the same logic the dashboard / Verify page reads from.
+    """
+    rows = db.query(Resume).all()
+    rejected = [r for r in rows if _is_rejected(r.is_resume, r.validity_confidence)]
+    if not rejected:
+        return {"ok": True, "deleted": 0}
+
+    rejected_ids = [r.id for r in rejected]
+    db.query(CorrectionLog).filter(
+        CorrectionLog.resume_id.in_(rejected_ids)
+    ).delete(synchronize_session=False)
+
+    removed_files = 0
+    for r in rejected:
+        path = Path(r.storage_path) if r.storage_path else None
+        db.delete(r)
+        if path and path.exists() and path.is_file():
+            try:
+                path.unlink()
+                removed_files += 1
+            except OSError as e:
+                log.warning("could not remove file %s: %s", path, e)
+    db.commit()
+    return {
+        "ok": True,
+        "deleted": len(rejected),
+        "files_removed": removed_files,
+    }
 
 
 @router.delete("/{resume_id}")

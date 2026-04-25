@@ -1,0 +1,153 @@
+{
+    "is_resume": true,
+    "contact": {
+        "name": null,
+        "email": null,
+        "phone": null,
+        "linkedin": null,
+        "github": null,
+        "website": null
+    },
+    "education": [
+        {
+            "institution": "University of Washington",
+            "degree": null,
+            "major": "DIG (Discoveries in Geosciences) Field School",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "August 2016"
+        },
+        {
+            "institution": "Drexel University School of Education",
+            "degree": "Post-Bachelors Teaching Certification Program",
+            "major": "Secondary Education",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "May 2011"
+        },
+        {
+            "institution": "Rutgers the State University of New Jersey",
+            "degree": "Bachelors of Sciences",
+            "major": "Biological Sciences",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "January 2005"
+        }
+    ],
+    "experience": [
+        {
+            "company": "Company Name 1/4",
+            "role": "Biology Teacher",
+            "start_date": "November 2016",
+            "end_date": "Present",
+            "description_bullets": [
+                "Execute, implement, and modify lesson plans while incorporating differentiated instruction and multiple intelligences.",
+                "Design and align lessons, labs, and assessments incorporating STEM, problem based learning, Common Core and NGSS.",
+                "Volunteer and participate in schools extracurricular activities such as selling tickets for the school talent show and participating in the Lindenwold HS 5K for the scholarship fund.",
+                "Teach and translate materials utilizing Sheltered Instruction techniques for English Language Learners.",
+                "Co-teach with special education teachers while executing modifications in student IEP and 504 plans.",
+                "Plan and present Google applications training for Lindenwold HS professional development."
+            ]
+        },
+        {
+            "company": "Company Name 1/4",
+            "role": "Biology Teacher",
+            "start_date": "September 2011",
+            "end_date": "November 2016",
+            "description_bullets": [
+                "Seek out of district professional development opportunities including but not limited to NJEA and NSTA Conventions, and addition programs focused in science, standards, & STEM.",
+                "Successfully fundraise money for incorporating additional technologies, TI Nspire CX graphing calculators, for the classroom through Donors Choose.org.",
+                "Execute, implement, and modify lesson plans while incorporating differentiated instruction and multiple intelligences.",
+                "Design and align lessons, labs, and assessments incorporating STEM, problem based learning, Common Core and NGSS.",
+                "Implement ideas, practices, and theories from professional development workshops.",
+                "Turn-Key for other teachers).",
+                "Co-teach with special education teachers while executing modifications in student IEP and 504 plans.",
+                "Communicate with parents/guardians regarding student progress within the classroom",
+                "Achieve Level 1 Google Certified Educator status in October 2016."
+            ]
+        },
+        {
+            "company": "Company Name 1/4",
+            "role": "Student Teacher",
+            "start_date": "January 2011",
+            "end_date": "March 2011",
+            "description_bullets": [
+                "Develop labs, assignments, and projects to reinforce material taught previously encouraging deeper knowledge and understanding in addition to incorporate multiple disciplines, including writing, science, social sciences, and health.",
+                "Continuous educational improvement by applying constructive criticism to lessons during student teaching experience.",
+                "Formative and summative assessments of students on content related to the New Jersey State standards.",
+                "Execute and implement lesson plans for the week while ensuring differentiated instruction.",
+                "Communicated with parents/guardians about student progress within the classroom"
+            ]
+        },
+        {
+            "company": "Company Name 1/4",
+            "role": "Clinical Lab Manager/Technologist",
+            "start_date": "April 2007",
+            "end_date": "April 2011",
+            "description_bullets": [
+                "Educate and train Pathology Residents according to guidelines set forth in Molecular Diagnostic Laboratory Resident Manual, including observation and hands on bench training of laboratory procedures and techniques.",
+                "Research and validate new laboratory tests by determining parameters for sample concentration, detection limits, and composition of procedures for the laboratory.",
+                "Maintain failed run, repeat testing, instrument/equipment maintenance & calibration, QC temperature, & T-A-T logs.",
+                "Perform DNA extraction/quantitation, PCR, CE, interpretation, and reporting of results of molecular studies.",
+                "Manage and operate the laboratory and equipment according to the QA/QC Procedure and Protocol."
+            ]
+        },
+        {
+            "company": "Company Name",
+            "role": "Quality Control Technician - TCA/E Coordinator",
+            "start_date": "August 2005",
+            "end_date": "April 2007",
+            "description_bullets": [
+                "Coordinate monthly seminar with QC Director and attending laboratory technicians in addition to conducting 'Good Laboratory Practices' and orientation lectures for laboratory technicians.",
+                "Compose and administer seminar quizzes and verifying technician credit by monitoring seminar attendance.",
+                "Assemble and execute state reports for Department of Health in several states in which licenses are held.",
+                "Troubleshoot and investigate pending specimens to ensure results are reported within a timely manner.",
+                "Manage Technician Competency Assessment (TCA) and Continuing Education (TCE) Programs.",
+                "Maintain laboratory technician training records and schedule annual evaluations.",
+                "Accumulate test result and testing comments for final report completion.",
+                "Compose standard operations and procedure for pending specimens.",
+                "Verify patient requisition forms to records in company database.",
+                "Compile and maintained list of specimens pending,"
+            ]
+        },
+        {
+            "company": "Company Name 1/4",
+            "role": "Clinical Laboratory Technician",
+            "start_date": "January 2005",
+            "end_date": "August 2005",
+            "description_bullets": [
+                "Prepare del agars and associated substrates from raw materials in large-scale electrophoresis testing platform",
+                "Proficient in aseptic techniques, 'Good Laboratory Practices', and proper pipetting practices.",
+                "Extract raw samples for DNA purification utilizing aseptic techniques.",
+                "Execute and analyze Real-Time and conventional PCR results."
+            ]
+        }
+    ],
+    "projects": [],
+    "technical_skills": [
+        "Anatomy",
+        "aseptic techniques",
+        "Biology",
+        "calculators",
+        "calibration",
+        "database",
+        "DNA",
+        "equipment maintenance",
+        "Good Laboratory Practices",
+        "laboratory procedures",
+        "laboratory tests",
+        "PCR",
+        "Real-Time PCR",
+        "Physiology",
+        "QA/QC",
+        "Statistics"
+    ],
+    "awards": [
+        "Member of Golden Key International Honor Society"
+    ],
+    "certificates": [
+        "Level 1 Google Certified Educator",
+        "New Jersey CEAS Biology"
+    ],
+    "calculated_yoe": 20.83
+}

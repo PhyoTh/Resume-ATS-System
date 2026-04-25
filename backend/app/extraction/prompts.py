@@ -6,7 +6,7 @@ historical runs.
 """
 from __future__ import annotations
 
-EXTRACT_PROMPT_VERSION = "extract-v6"
+EXTRACT_PROMPT_VERSION = "extract-v7"
 
 
 def _today_iso() -> str:
@@ -211,9 +211,43 @@ rounded to 0.8.
 
 # Defaults for non-resume documents
 
-If `is_resume` is false, still return all keys but with empty/null values.
-Set `validity_reason` to one sentence explaining why (e.g. "Document is an
-invoice with line items, not a resume.").
+If `is_resume` is false, you MUST STILL return EVERY top-level key with
+the appropriate empty value. This is non-negotiable — downstream code
+defaults to "not a resume" only when the model returns nothing.
+
+Required shape when `is_resume` is false:
+
+  is_resume: false
+  validity_reason: one sentence explaining what the document IS instead
+    (e.g. "Document is a chocolate-chip cookie recipe, not a resume.",
+    "Document is a billing invoice with line items, not a resume.",
+    "Document is a single blank page with no extractable text.").
+  validity_confidence: low number — how confident you are it IS a resume.
+    Use 0.0–0.10 when you are CERTAIN it is not (recipe, invoice, code,
+    fiction, blank page); 0.10–0.49 for ambiguous cases (a profile page,
+    a cover letter, a partial CV).
+  contact: {{name: null, email: null, phone: null, linkedin: null, github: null, website: null}}
+  education / experience / projects / technical_skills / awards /
+    certificates / concerns: []   (empty arrays — never omit the key)
+  calculated_yoe: 0.0
+  custom: {{}}
+
+Examples of documents that are NOT resumes and should always trip the
+validity gate:
+
+  - Recipes, menus, shopping lists, food packaging text.
+  - Invoices, receipts, purchase orders, bank statements.
+  - Source code dumps, log files, configuration files.
+  - Articles, blog posts, fiction, news.
+  - Screenshots / scans of UIs, dashboards, social media posts.
+  - Job descriptions (the recruiter sometimes uploads the JD by mistake
+    instead of the candidate's resume — this is NOT a resume).
+  - Cover letters with no resume content attached.
+  - Multi-person rosters / contact spreadsheets.
+  - Blank pages or near-blank documents.
+
+Even if the document mentions skills or job titles, it is NOT a resume
+unless it is structured as one person's professional history.
 """
 
 

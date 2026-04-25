@@ -140,12 +140,209 @@ def run(
             truth = json.loads(truth_path.read_text())
             record["truth"] = truth
             record["metrics"] = _score_one(result.normalized, truth)
+            _print_field_diff(path.name, result.normalized, truth)
+            _print_per_file_metrics(record["metrics"])
         (out_dir / f"{path.stem}.json").write_text(json.dumps(record, indent=2))
         rows.append(record)
 
     _print_summary(rows)
     (out_dir / "summary.json").write_text(json.dumps(rows, indent=2))
     console.print(f"\n[green]wrote[/green] {out_dir}")
+
+
+def _norm(value):
+    """Loose comparator: trim whitespace, ignore case, collapse `None`/`""`/`[]`/`{}`."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        s = value.strip().lower()
+        return s or None
+    if isinstance(value, (list, dict)) and not value:
+        return None
+    if isinstance(value, float):
+        return round(value, 2)
+    return value
+
+
+def _eq(a, b) -> bool:
+    return _norm(a) == _norm(b)
+
+
+def _fmt(value, width: int = 60) -> str:
+    if value is None:
+        return "[dim]∅[/dim]"
+    if isinstance(value, list):
+        return f"[{len(value)} item(s)]"
+    s = str(value).replace("\n", " ⏎ ")
+    if len(s) > width:
+        s = s[: width - 1] + "…"
+    return s
+
+
+def _list_diff_summary(truth_list: list, pred_list: list) -> tuple[str, str]:
+    """For lists of strings: return (truth_cell, pred_cell) for a Rich table.
+
+    `pred_cell` calls out what pred is *missing* (in truth, not in pred)
+    and what pred has *extra* (in pred, not in truth) so the recruiter
+    can see at a glance where the LLM disagrees with the labels.
+    """
+    t = {_norm(x) for x in (truth_list or []) if isinstance(x, (str, int, float))}
+    p = {_norm(x) for x in (pred_list or []) if isinstance(x, (str, int, float))}
+    t.discard(None)
+    p.discard(None)
+    pred_missing = sorted(str(x) for x in (t - p))
+    pred_extra = sorted(str(x) for x in (p - t))
+    truth_cell = f"{len(t)} item(s)"
+    parts = [f"{len(p)} item(s)"]
+    if pred_missing:
+        parts.append(f"missing {len(pred_missing)}: {pred_missing[:3]}")
+    if pred_extra:
+        parts.append(f"extra {len(pred_extra)}: {pred_extra[:3]}")
+    return truth_cell, "; ".join(parts)
+
+
+def _print_field_diff(filename: str, pred: dict, truth: dict) -> None:
+    """Per-file table comparing every field present in the truth JSON.
+
+    The truth JSON may omit fields (e.g. `concerns`, `validity_reason`) —
+    we only diff what's actually labelled. ✓ = exact match, ✗ = mismatch.
+    """
+    rows: list[tuple[str, str, str, str]] = []  # (status, field, truth, pred)
+
+    def add_scalar(label: str, t_val, p_val):
+        ok = _eq(t_val, p_val)
+        rows.append(
+            ("[green]✓[/green]" if ok else "[red]✗[/red]", label, _fmt(t_val), _fmt(p_val))
+        )
+
+    def add_list_summary(label: str, t_list, p_list):
+        ok = (
+            isinstance(t_list, list)
+            and isinstance(p_list, list)
+            and {_norm(x) for x in t_list} == {_norm(x) for x in p_list}
+        )
+        t_str, p_str = _list_diff_summary(t_list or [], p_list or [])
+        rows.append(
+            (
+                "[green]✓[/green]" if ok else "[yellow]≈[/yellow]",
+                label,
+                t_str,
+                p_str,
+            )
+        )
+
+    def add_list_of_dicts(label: str, t_list, p_list, key_fields):
+        """One row per labelled entry; compare position-aligned only."""
+        t_list = t_list or []
+        p_list = p_list or []
+        n = max(len(t_list), len(p_list))
+        if n == 0:
+            return
+        rows.append(
+            (
+                "[green]✓[/green]" if len(t_list) == len(p_list) else "[red]✗[/red]",
+                f"{label} (count)",
+                str(len(t_list)),
+                str(len(p_list)),
+            )
+        )
+        for i in range(n):
+            t_entry = t_list[i] if i < len(t_list) else {}
+            p_entry = p_list[i] if i < len(p_list) else {}
+            for k in key_fields:
+                t_val = (t_entry or {}).get(k)
+                p_val = (p_entry or {}).get(k)
+                if t_val is None and p_val is None:
+                    continue  # both empty → not labelled, skip
+                add_scalar(f"  {label}[{i}].{k}", t_val, p_val)
+
+    if "is_resume" in truth:
+        add_scalar("is_resume", truth.get("is_resume"), pred.get("is_resume"))
+
+    if "contact" in truth:
+        t_c = truth.get("contact") or {}
+        p_c = pred.get("contact") or {}
+        for k in ("name", "email", "phone", "linkedin", "github", "website"):
+            if k in t_c:  # truth opted-in to label this contact subfield
+                add_scalar(f"contact.{k}", t_c.get(k), p_c.get(k))
+
+    if "education" in truth:
+        add_list_of_dicts(
+            "education",
+            truth.get("education"),
+            pred.get("education"),
+            ("institution", "degree", "major", "gpa", "start_date", "end_date"),
+        )
+
+    if "experience" in truth:
+        add_list_of_dicts(
+            "experience",
+            truth.get("experience"),
+            pred.get("experience"),
+            ("company", "role", "start_date", "end_date"),
+        )
+        # bullets: count match + extra/missing summary, not per-bullet diff
+        for i, t_entry in enumerate(truth.get("experience") or []):
+            t_bullets = (t_entry or {}).get("description_bullets") or []
+            p_entry = (pred.get("experience") or [{}])[i] if i < len(pred.get("experience") or []) else {}
+            p_bullets = (p_entry or {}).get("description_bullets") or []
+            if t_bullets or p_bullets:
+                add_list_summary(
+                    f"  experience[{i}].bullets",
+                    t_bullets,
+                    p_bullets,
+                )
+
+    if "projects" in truth:
+        add_list_of_dicts(
+            "projects",
+            truth.get("projects"),
+            pred.get("projects"),
+            ("name",),
+        )
+
+    if "technical_skills" in truth:
+        add_list_summary(
+            "technical_skills",
+            truth.get("technical_skills"),
+            pred.get("technical_skills"),
+        )
+
+    if "awards" in truth:
+        add_list_summary("awards", truth.get("awards"), pred.get("awards"))
+    if "certificates" in truth:
+        add_list_summary(
+            "certificates",
+            truth.get("certificates"),
+            pred.get("certificates"),
+        )
+
+    if "calculated_yoe" in truth:
+        add_scalar(
+            "calculated_yoe",
+            truth.get("calculated_yoe"),
+            pred.get("calculated_yoe"),
+        )
+
+    t = Table(title=f"Field-by-field diff — {filename}")
+    t.add_column("✓"); t.add_column("field"); t.add_column("truth"); t.add_column("prediction")
+    for status, field, t_val, p_val in rows:
+        t.add_row(status, field, t_val, p_val)
+    console.print(t)
+
+
+def _print_per_file_metrics(m: dict) -> None:
+    """Compact one-table summary of the pre-computed numeric metrics."""
+    t = Table(title="Metrics")
+    t.add_column("metric"); t.add_column("value", justify="right")
+    t.add_row("is_resume_correct", "✓" if m.get("is_resume_correct") else "✗")
+    t.add_row("name (exact)", "✓" if m.get("name") else "✗")
+    t.add_row("email (exact)", "✓" if m.get("email") else "✗")
+    yoe = m.get("yoe_abs_err")
+    t.add_row("YOE abs error", f"{yoe:.2f}" if yoe is not None else "n/a")
+    t.add_row("skills F1", f"{m.get('skills_f1', 0):.2f}")
+    t.add_row("education match", f"{m.get('education_match', 0):.2f}")
+    console.print(t)
 
 
 def _print_summary(rows: list[dict]) -> None:

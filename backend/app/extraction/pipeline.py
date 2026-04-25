@@ -186,10 +186,32 @@ def _has_filled_extraction_signal(value: Any) -> bool:
     return False
 
 
+_DEFAULT_VALIDITY_REASON_NO_DATA = (
+    "Model returned no usable extraction; document treated as not a resume."
+)
+
+
 def _apply_extraction_defaults(raw: dict[str, Any]) -> None:
-    """Fill in any keys the model omitted so downstream code is safe."""
-    raw.setdefault("is_resume", True)
-    raw.setdefault("validity_confidence", 0.5)
+    """Fill in any keys the model omitted so downstream code is safe.
+
+    Default to NOT a resume when the model gives us nothing. The previous
+    default (`is_resume=True` with `validity_confidence=0.5`) silently
+    classified empty / unparseable responses as borderline-valid resumes —
+    which let recipes, invoices, and other non-resumes leak past the
+    validity gate when the model returned `{}`.
+    """
+    no_validity_signal = (
+        "is_resume" not in raw
+        and "validity_confidence" not in raw
+        and "validity_reason" not in raw
+    )
+    if no_validity_signal:
+        raw["is_resume"] = False
+        raw["validity_confidence"] = 0.0
+        raw["validity_reason"] = _DEFAULT_VALIDITY_REASON_NO_DATA
+
+    raw.setdefault("is_resume", False)
+    raw.setdefault("validity_confidence", 0.0)
     raw.setdefault("validity_reason", "")
     if not isinstance(raw.get("contact"), dict):
         raw["contact"] = {}

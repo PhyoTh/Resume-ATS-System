@@ -246,6 +246,10 @@ export const api = {
         fetch(`/api/resumes/${id}`, { method: 'DELETE' }).then((r) =>
             json<{ ok: boolean }>(r),
         ),
+    deleteRejectedResumes: () =>
+        fetch('/api/resumes', { method: 'DELETE' }).then((r) =>
+            json<{ ok: boolean; deleted: number; files_removed: number }>(r),
+        ),
     updateResumeStatus: (id: number, status: ResumeStatus) =>
         fetch(`/api/resumes/${id}/status`, {
             method: 'PUT',

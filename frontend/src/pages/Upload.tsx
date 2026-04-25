@@ -173,6 +173,46 @@ export default function Upload() {
         setRows((prev) => prev.filter((r) => r.resumeId !== id));
     };
 
+    const rejectedCount = useMemo(() => {
+        const queueIds = new Set<number>();
+        let n = 0;
+        for (const r of rows) {
+            if (r.resume?.id != null && isRejected(r.resume)) {
+                queueIds.add(r.resume.id);
+                n += 1;
+            }
+        }
+        for (const r of history) {
+            if (queueIds.has(r.id)) continue;
+            if (isRejected(r)) n += 1;
+        }
+        return n;
+    }, [rows, history]);
+
+    const purgeRejected = async () => {
+        if (rejectedCount === 0) return;
+        const ok = confirm(
+            `Delete all ${rejectedCount} resume${
+                rejectedCount === 1 ? '' : 's'
+            } that the LLM classified as NOT a resume? This can't be undone.`,
+        );
+        if (!ok) return;
+        try {
+            const res = await api.deleteRejectedResumes();
+            setHistory((prev) => prev.filter((r) => !isRejected(r)));
+            setRows((prev) =>
+                prev.filter((r) => !(r.resume && isRejected(r.resume))),
+            );
+            alert(
+                `Deleted ${res.deleted} non-resume row${
+                    res.deleted === 1 ? '' : 's'
+                }.`,
+            );
+        } catch (e) {
+            alert(`Bulk delete failed: ${e}`);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <h1 className="text-2xl font-semibold">Upload resumes</h1>
@@ -210,10 +250,20 @@ export default function Upload() {
             <DropZone onFiles={onFiles} />
 
 
-            <p className="text-sm text-slate-500">
-                Uploaded files are persisted in the backend database. If you
-                refresh, recent records are shown below.
-            </p>
+            <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-slate-500">
+                    Uploaded files are persisted in the backend database. If
+                    you refresh, recent records are shown below.
+                </p>
+                {rejectedCount > 0 && (
+                    <button
+                        onClick={purgeRejected}
+                        className="text-sm text-red-700 border border-red-300 hover:bg-red-50 rounded px-3 py-1.5 whitespace-nowrap"
+                    >
+                        Delete {rejectedCount} non-resume{rejectedCount === 1 ? '' : 's'}
+                    </button>
+                )}
+            </div>
 
             {(rows.length > 0 || persistedRows.length > 0) && (
                 <table className="w-full border rounded bg-white overflow-hidden">
@@ -259,8 +309,8 @@ export default function Upload() {
                                         )}
                                     {r.status === 'done' &&
                                         isRejected(r.resume) && (
-                                            <span className="text-red-700">
-                                                rejected document
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide bg-red-100 text-red-800 border border-red-200 rounded px-1.5 py-0.5">
+                                                Not a resume
                                             </span>
                                         )}
                                     {r.status === 'error' && (
@@ -376,8 +426,8 @@ export default function Upload() {
                                     {(r.processing_status === 'done' ||
                                         r.processing_status == null) &&
                                         isRejected(r) && (
-                                            <span className="text-red-700">
-                                                rejected document
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide bg-red-100 text-red-800 border border-red-200 rounded px-1.5 py-0.5">
+                                                Not a resume
                                             </span>
                                         )}
                                 </td>

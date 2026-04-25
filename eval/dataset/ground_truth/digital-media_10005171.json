@@ -1,0 +1,102 @@
+{
+    "is_resume": true,
+    "contact": {
+        "name": null,
+        "email": null,
+        "phone": null,
+        "linkedin": null,
+        "github": null,
+        "website": null
+    },
+    "education": [
+        {
+            "institution": "University of North Carolina",
+            "degree": "Master of Arts",
+            "major": "Radio, Television & Motion Pictures",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "1994"
+        },
+        {
+            "institution": "University of Tennessee",
+            "degree": "Bachelor of Arts",
+            "major": "Human Services",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "1975"
+        }
+    ],
+    "experience": [
+        {
+            "company": "Company Name 1/4",
+            "role": "Media Activities Specialist",
+            "start_date": "September 2013",
+            "end_date": "Present",
+            "description_bullets": [
+                "Organize major campus events by overseeing security, media services, food services, and marketing,",
+                "Notable speakers in the past have included Neil de Grasse Tyson, host of Cosmos: A Spacetime Odyssey, and theoretical physicist, Dr. Michio Kaku.",
+                "Assisting academic departments with minor events such as conferences and speakers that require smaller venues.",
+                "Create videos for various departments on campus for academic and recruitment purposes."
+            ]
+        },
+        {
+            "company": null,
+            "role": "Marketing Coordinator",
+            "start_date": "March 1996",
+            "end_date": "August 2013",
+            "description_bullets": [
+                "Engaged in strategic planning with deans and department heads to increase enrollment and public awareness of new academic programs",
+                "Utilized focus groups, surveys, and other market research and analysis tools to develop strategy",
+                "Supported branding via press releases, copy for radio and TV ads, extensive website content and print ads, brochures, fliers, posters, and billboards",
+                "Managed advertising budget for print and electronic media up to $500,000.",
+                "Proofed and edited materials for publication",
+                "Supervised staff of seven comprised of three graphic artists, three web designers, and the office manager",
+                "Recruited and mentored students who represented the college at special events",
+                "Wrote scripts and recruited talent for the College's radio and television commercials",
+                "Worked with local production companies to create commercials for TV and radio",
+                "Developed scripts for recruitment and instructional videos for various academic departments",
+                "Produced a series of \"How To\" videos to guide students through the registration process for the Student Services department",
+                "Commissioned by local state representative to produce a historical documentary on African Americans in the Tennessee Legislature",
+                "Increased media presence at press conferences and other campus events",
+                "Hosted television show that focused on campus and community events on cable channel dedicated to education",
+                "Increased the frequency of newspaper, radio and television interviews featuring administrators, faculty, and staff members",
+                "Designated as the contact for area journalists and served as spokesperson when needed."
+            ]
+        },
+        {
+            "company": null,
+            "role": "Continuing Education Coordinator",
+            "start_date": "March 1994",
+            "end_date": "March 1996",
+            "description_bullets": [
+                "Created personal interest classes that appealed to and met the needs of the community.",
+                "Recruited instructors, organized schedule, and marketed courses.",
+                "Organized first Spanish language classes for ER personnel in local hospitals."
+            ]
+        }
+    ],
+    "projects": [],
+    "technical_skills": [
+        "advertising",
+        "market research",
+        "marketing",
+        "press releases",
+        "radio production",
+        "television production",
+        "website content",
+        "budget management",
+        "strategic planning",
+        "script writing"
+    ],
+    "awards": [
+        "Bronze Paragon Award in 2012 from NCMPR (National Council for Marketing and Public Relations)",
+        "Silver Paragon Award in 2011 from NCMPR",
+        "Gold Medallion in 2010 NCMPR District level",
+        "Silver Medallion in 2010 NCMPR District level",
+        "Bronze Medallion in 2010 NCMPR District level",
+        "Mortar Board Senior Citation, Academic Achievement Award",
+        "AASLF Outstanding Senior Award"
+    ],
+    "certificates": [],
+    "calculated_yoe": 32.1
+}

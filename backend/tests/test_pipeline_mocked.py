@@ -58,7 +58,7 @@ def test_pipeline_runs_normalization_over_llm_output(db, tmp_path):
     assert "JavaScript" in result.normalized["technical_skills"]
     assert "Python" in result.normalized["technical_skills"]
     assert "Django" in result.normalized["technical_skills"]
-    assert result.prompt_version == "extract-v6"
+    assert result.prompt_version == "extract-v7"
 
 
 def test_pipeline_unwraps_curly_brace_wrapper(db, tmp_path):
@@ -125,3 +125,21 @@ def test_pipeline_fills_missing_keys(db, tmp_path):
     assert result.raw["calculated_yoe"] is None
     assert result.raw["concerns"] == []
     assert result.raw["custom"] == {}
+
+
+def test_empty_llm_response_defaults_to_not_a_resume(db, tmp_path):
+    """Regression: when the LLM returns nothing useful (e.g. for a recipe
+    that the model can't parse meaningfully), the pipeline must default to
+    `is_resume=False` so the validity gate rejects the document. The old
+    default of True silently classified non-resumes as borderline-valid
+    resumes (recipes, invoices, etc. leaked past the gate).
+    """
+    doc = tmp_path / "weird.txt"
+    doc.write_text("dummy")
+
+    with patch.object(pipeline_mod, "complete_json", return_value={}):
+        result = pipeline_mod.extract(doc, db)
+
+    assert result.raw["is_resume"] is False
+    assert result.raw["validity_confidence"] == 0.0
+    assert "no usable extraction" in result.raw["validity_reason"].lower()

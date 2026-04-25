@@ -530,3 +530,106 @@ Docs:
 - This appendix written.
 
 Final verification: `make test` → 32/32 passed; `make check` clean.
+
+---
+
+## Turn 8 — Recipe-as-resume bug, Upload-page rejection UX, ground-truth generator, QA pass
+
+**User (paraphrase):**
+
+1. Uploaded `recipe.txt` and the app classified it as `is_resume=true`.
+   The eval JSON for a non-resume should have the same shape as a
+   resume (all-null fields), with `is_resume=false` + a clear
+   `validity_reason`. Also surface other edge cases.
+2. Upload page should clearly say "not a resume" for rejected rows, and
+   have a one-button bulk delete for all rejected uploads.
+3. Eval ground truth has nothing real in it — generate labels from
+   `archive/Resume/Resume.csv`.
+4. Do a QA pass on the whole project (perf / code / security / edge
+   cases). Skip ranking.
+
+**Assistant (summary):**
+
+Diagnosis of the recipe bug:
+
+- `_apply_extraction_defaults` defaulted `is_resume` to **True** when the
+  LLM returned `{}`. For inputs where the model produced no useful JSON
+  (recipes, invoices, garbled text), the row was silently classified as a
+  borderline-valid resume (confidence 0.5) and slipped past the validity
+  gate.
+- The user-message framing for known mime types ("Resume (PDF, ...)")
+  asserted the file IS a resume and contradicted the system prompt's
+  "MAY or MAY NOT" line, biasing the model toward `is_resume=true`.
+- The unknown-mime fallback dumped the raw text with no framing at all,
+  giving the model nothing to anchor on.
+
+Fixes:
+
+- **Pipeline defaults** now lean SAFE: when the LLM omits `is_resume`,
+  `validity_confidence`, AND `validity_reason`, we set them to
+  `false / 0.0 / "Model returned no usable extraction; document treated
+  as not a resume."`. The plain `setdefault("is_resume", False)` is the
+  new fallback for partial responses.
+- **`parse_doc.py`** rewritten to use neutral framing across every mime
+  type (`_neutral_framing`) — "Document uploaded by a recruiter ...
+  verify against the schema and set is_resume=false if it is not." Plus
+  a 50K-char cap (`MAX_TEXT_CHARS`) so pathological text inputs don't
+  blow the prompt out.
+- **Prompt v7** spells out the required shape for non-resumes
+  explicitly (every key must be present with the empty value), gives
+  examples of common non-resume inputs (recipes, invoices, source dumps,
+  cover letters, JDs uploaded by mistake, blank pages, multi-person
+  rosters), and tells the model to set `validity_confidence` to 0.0–0.10
+  when it's certain.
+- New regression test: `test_empty_llm_response_defaults_to_not_a_resume`
+  confirms `complete_json` returning `{}` results in `is_resume=False`.
+
+Upload-page rejection UX:
+
+- "rejected document" replaced with a styled `Not a resume` badge
+  (`bg-red-100 text-red-800` pill with uppercase tracking).
+- New `useMemo` `rejectedCount` walks the queue + history rows and
+  surfaces a button "Delete N non-resume(s)" next to the persistence
+  caption when `rejectedCount > 0`.
+- New backend endpoint `DELETE /api/resumes` (no body) bulk-deletes all
+  `_is_rejected` rows in one trip, returning `{deleted, files_removed}`.
+  Cleans `correction_log` rows first so FK enforcement doesn't reject.
+- `api.deleteRejectedResumes()` wires the button.
+
+Eval ground truth from CSV:
+
+- Confirmed `archive/Resume/Resume.csv` only has `ID, Resume_str,
+  Resume_html, Category` — no structured labels. Resumes are also fully
+  anonymized (no real names / emails / URLs).
+- Wrote `eval/scripts/gen_ground_truth.py` that:
+  - Joins each PDF in `eval/dataset/resumes/` to the CSV by numeric ID
+    (extracted from the filename).
+  - Regex-extracts emails / phones / linkedin / github / website (none
+    of these matched in the Kaggle subset, but the code is there for
+    future non-anonymized PDFs).
+  - Whole-word matches a fixed `SKILL_VOCAB` (50 common tools spanning
+    SWE / design / data / office) against the resume body and writes
+    those into `technical_skills`.
+  - Skips `engineering_10030015.json` (hand-labelled) and the negatives.
+- Re-ran the generator → 7 fresh `<stem>.json` files; finance picked up
+  "Java" via the vocab match.
+- `eval/dataset/README.md` updated to describe the partial / machine-
+  derived ground truth.
+
+QA pass — fixes applied:
+
+- **Upload size + type guards.** New constants
+  `MAX_UPLOAD_BYTES = 10 MB`, `ALLOWED_UPLOAD_SUFFIXES`, `_safe_suffix()`.
+  Upload endpoint now rejects empty files (422), oversized files (413),
+  and unsupported extensions (415), and strips path-separator characters
+  out of the suffix to keep the storage path clean.
+- New `test_upload_safety.py` covers all four guards plus the path-char
+  scrubber.
+
+QA pass — recorded as Known Limitations in DESIGN.md (no fix this turn):
+
+- ID-based URLs are guessable (single-recruiter, no auth, by design).
+- Tier filtering happens in Python after fetching all rows (acceptable
+  to ~10K rows; would need a stored column past that).
+
+Final verification: `make test` → 40/40 passed; `make check` clean.

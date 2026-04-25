@@ -1,0 +1,70 @@
+{
+    "is_resume": true,
+    "contact": {
+        "name": null,
+        "email": null,
+        "phone": null,
+        "linkedin": null,
+        "github": null,
+        "website": null
+    },
+    "education": [
+        {
+            "institution": "Northwestern College",
+            "degree": null,
+            "major": "Medical Assistant",
+            "gpa": null,
+            "start_date": null,
+            "end_date": null
+        }
+    ],
+    "experience": [
+        {
+            "company": "Company Name",
+            "role": "Floral designer",
+            "start_date": "June 2013",
+            "end_date": "March 2016",
+            "description_bullets": [
+                "Designed arrangements for wide range of events, which included wedding and corporate parties.",
+                "I did all of the prep work as well. I kept the showroom clean and maintained properly for display"
+            ]
+        },
+        {
+            "company": "Company Name",
+            "role": "Floral designer",
+            "start_date": "January 2011",
+            "end_date": "December 2012",
+            "description_bullets": [
+                "Opened and closed the store, which included counting cash drawers and making bank deposits.",
+                "Helped customers select products that best fit their personal needs, as well as floral designing,"
+            ]
+        },
+        {
+            "company": "Company Name",
+            "role": "Cashier",
+            "start_date": "April 2008",
+            "end_date": "August 2009",
+            "description_bullets": [
+                "Cashier main function. In addition helped unloaded trucks, stocked shelves and carried merchandise out on the floor for customers.",
+                "Marked clearance products with updated price tags."
+            ]
+        },
+        {
+            "company": "Company Name",
+            "role": "Manager/Floral designer",
+            "start_date": "October 2002",
+            "end_date": "April 2008",
+            "description_bullets": [
+                "Opened and closed the store, which included counting cash drawers and making bank deposits.",
+                "Maintained visually appealing and effective displays for the entire store.",
+                "Answered customers' questions and addressed problems and complaints in person and via phone.",
+                "Helped customers select products that best fit their personal needs, as well as design floral arrangements for the cooler display and for outgoing orders."
+            ]
+        }
+    ],
+    "projects": [],
+    "technical_skills": [],
+    "awards": [],
+    "certificates": [],
+    "calculated_yoe": 11.58
+}

@@ -1,25 +1,96 @@
 {
-  "is_resume": true,
-  "contact": {
-    "name": null,
-    "email": null
-  },
-  "education": [],
-  "experience": [
-    {
-      "company": "Company Name",
-      "role": "Engineering Lab Technician"
+    "is_resume": true,
+    "contact": {
+        "name": null,
+        "email": null,
+        "phone": null,
+        "linkedin": null,
+        "github": null,
+        "website": null
     },
-    {
-      "company": "Company Name",
-      "role": "Engineering Lab Technician, Sr. Specialist"
-    },
-    {
-      "company": "Company Name",
-      "role": "Assembly/ Test Technician"
-    }
-  ],
-  "technical_skills": [
-    "LabView"
-  ]
+    "education": [
+        {
+            "institution": "Forsyth Technical Community College",
+            "degree": "Associates, Applied Science",
+            "major": "Electronics Engineering",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "2011"
+        },
+        {
+            "institution": "Community College of the Air Force",
+            "degree": "Associates, Applied Science",
+            "major": "Munitions Systems Technology",
+            "gpa": null,
+            "start_date": null,
+            "end_date": "2007"
+        }
+    ],
+    "experience": [
+        {
+            "company": "Company Name 1/4",
+            "role": "Engineering Lab Technician",
+            "start_date": "October 2016",
+            "end_date": "Present",
+            "description_bullets": [
+                "Responsible for testing various seat structures to meet specific certification requirements. A",
+                "Maintain and calibrate test instruments to ensure testing capabilities are maintained.",
+                "Ensure data is captured and recorded correctly for certification test reports.",
+                "Duties also dynamic test set-up and static suite testing"
+            ]
+        },
+        {
+            "company": "Company Name",
+            "role": "Engineering Lab Technician, Sr. Specialist",
+            "start_date": "April 2012",
+            "end_date": "October 2016",
+            "description_bullets": [
+                "Utilized skills learned from LabView Course 1 training to construct and maintain LabView VI programs.",
+                "Responsible for fabricating and maintaining hydraulic/electrical test equipment to complete development and qualification programs.",
+                "Apply engineering principles to operate electrical, mechanical, and hydraulic systems to test pumps, motors, and actuators for aircraft.",
+                "Work closely with Design Engineers and Lab Management to investigate performance/design issues.",
+                "Completed Lean Six Sigma/5s training seminar."
+            ]
+        },
+        {
+            "company": "Company Name",
+            "role": "Assembly/ Test Technician",
+            "start_date": "March 2007",
+            "end_date": "March 2012",
+            "description_bullets": [
+                "Lead technician overseeing three member crew responsible for maintaining high quality standards in a high volume production environment.",
+                "Responsible for cargo door system actuators for Boeing 787 aircraft.",
+                "Experience with hydraulic components that meet military and FAA regulations.",
+                "Work closely with Engineering Group and Quality Assurance inspectors to resolve problems with development actuators."
+            ]
+        },
+        {
+            "company": "Company Name 1/4",
+            "role": "Munitions Systems Journeyman",
+            "start_date": "March 2003",
+            "end_date": "March 2007",
+            "description_bullets": [
+                "Responsible for certifying small arms, actuation devices, bombs, rockets and other munitions items.",
+                "Supervised work crews of 3-5 men while supporting USAF aircraft during Operation Enduring Freedom",
+                "Assembled rockets, bombs, and small arms for Operation Enduring Freedom",
+                "Train newly assigned personnel at Line Delivery section on transporting, loading, and delivering munitions to aircraft."
+            ]
+        }
+    ],
+    "projects": [],
+    "technical_skills": [
+        "DasyLab",
+        "Labview",
+        "Mechanical",
+        "Electrical",
+        "Lean/5S",
+        "Hydraulic Testing",
+        "Test Stand Fabrication"
+    ],
+    "awards": [],
+    "certificates": [
+        "LabView Course 1 training",
+        "Lean Six Sigma/5s"
+    ],
+    "calculated_yoe": 23.0
 }

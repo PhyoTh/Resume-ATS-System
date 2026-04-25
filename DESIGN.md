@@ -277,3 +277,18 @@ uses. Not built yet because nothing in the UI triggers it.
 correction log stores it as an opaque blob swap. If the user edits one
 entry in a 5-item concerns list, the log shows the whole list changing.
 Same limitation as aliases; same deferred fix.
+
+### 6. ID-based URLs are guessable
+
+`/resumes/5`, `/api/resumes/5/file` — auto-incrementing integer IDs are
+public. Single-recruiter app with no auth, so this is fine in practice,
+but anyone with network access to the dev server can iterate IDs.
+Multi-tenant deployment would need to swap to opaque IDs (UUIDs) or add
+auth before exposing the API.
+
+### 7. Tier filtering happens in Python
+
+`GET /api/resumes?tier=Excellent` fetches every matching row from the DB
+and bucketizes in Python (because `match_tier` is derived from `score`,
+not stored). Acceptable for the demo dataset; would need a stored
+`match_tier` column or a DB-side CASE expression past ~10K rows.
