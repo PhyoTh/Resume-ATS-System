@@ -196,6 +196,28 @@ ResumeOut field, the `?tier=` query parameter, and the dashboard badge.
 
 ---
 
+## 11. Eval dataset (small + diverse, not exhaustive)
+
+**Decision.** `eval/dataset/` is a curated subset of the Kaggle resume
+corpus — one PDF from each of 8 different categories (engineering,
+healthcare, finance, etc.) plus two negatives (`invoice.txt`,
+`recipe.txt`). Only one of the eight Kaggle PDFs has a hand-labelled
+ground-truth JSON; the others run as smoke tests (extraction completes,
+no per-field metric).
+
+**Why.** The harness is meant to be a useful daily driver during prompt
+iteration. Running the entire 927-PDF Kaggle corpus on every change is
+slow and expensive. Eight diverse positives is enough to surface format
+breakage (column-heavy designer resumes vs. dense finance resumes) and
+the two negatives directly assert the validity gate. Hand-labelling all
+ground truth would crowd out the deadline for negligible signal — the
+metric arithmetic is already validated by the one labelled example.
+
+**Provenance.** Mine for the curation strategy. Tool wrote the harness
+filter that accepts `.txt` / `.md` so negatives can sit alongside PDFs.
+
+---
+
 ## Known Limitations
 
 Things I chose to scope *out* for the initial submission. Each one is a
@@ -226,10 +248,6 @@ conflated:
 The retroactive `POST /api/resumes/{id}/score` endpoint already treats
 "extract once, score against many JDs" as a first-class flow on the
 extraction side; it's just not modeled that way in the DB yet.
-
-**Provenance.** Pointed out by the user during review. I agreed to defer
-it past the April 24 deadline rather than rush a schema split without
-migrations.
 
 ### 2. Alias learning is positional
 

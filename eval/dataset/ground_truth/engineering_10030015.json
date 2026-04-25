@@ -1,0 +1,25 @@
+{
+  "is_resume": true,
+  "contact": {
+    "name": null,
+    "email": null
+  },
+  "education": [],
+  "experience": [
+    {
+      "company": "Company Name",
+      "role": "Engineering Lab Technician"
+    },
+    {
+      "company": "Company Name",
+      "role": "Engineering Lab Technician, Sr. Specialist"
+    },
+    {
+      "company": "Company Name",
+      "role": "Assembly/ Test Technician"
+    }
+  ],
+  "technical_skills": [
+    "LabView"
+  ]
+}

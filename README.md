@@ -213,29 +213,67 @@ documents and resumes uploaded with no JD selected (parse-only) have a
 `eval/` calls it directly without booting FastAPI, satisfying the
 assignment's "extraction is separately testable" requirement.
 
+### What ships in the repo
+
+A small curated dataset is committed under `eval/dataset/`:
+
+```
+eval/dataset/
+├── resumes/         # 8 PDFs, one per Kaggle category (engineering,
+│                    #   digital-media, healthcare, teacher, finance,
+│                    #   sales, designer, arts)
+├── negatives/       # invoice.txt + recipe.txt (NOT resumes)
+├── ground_truth/    # 1 hand-labelled positive + the 2 negatives
+└── edge_cases/      # reserved for tricky-layout examples (empty)
+```
+
+Read `eval/dataset/README.md` for the trade-offs (only one positive is
+hand-labelled; the other seven are smoke tests).
+
+### Where to get the source dataset
+
+The positive PDFs come from the public Kaggle resume corpus:
+
+> <https://www.kaggle.com/datasets/hadikp/resume-data-pdf>
+
+Download it from Kaggle (login required), unzip, and the layout
+`data/data/<CATEGORY>/<id>.pdf` is what the repo's `archive/` directory
+mirrors. The Kaggle resumes are anonymized (no real names; companies are
+written as "Company Name") which makes them safe to commit but limits
+what you can assert in ground-truth labels.
+
+To regenerate or extend the curated subset, copy whichever PDFs you want
+into `eval/dataset/resumes/` (and matching `<stem>.json` into
+`ground_truth/` if you want metrics for them).
+
+### Commands
+
 ```bash
-# Single resume (no ground truth — just print extraction)
-make eval FILE=path/to/resume.pdf
-
-# Single resume vs. a ground-truth JSON
-make eval FILE=eval/dataset/resumes/jane.pdf TRUTH=eval/dataset/ground_truth/jane.json
-
-# Whole dataset
+# Whole dataset (positives — runs everything in eval/dataset/resumes/)
 make eval DATASET=eval/dataset
 
-# A subset directory (e.g. edge cases only)
-make eval DATASET=eval/dataset SUBSET=edge_cases
+# Just the negatives (asserts the validity gate rejects them)
+make eval DATASET=eval/dataset SUBSET=negatives
 
-# Different model
+# A single file (no ground truth — just print the extraction)
+make eval FILE=eval/dataset/resumes/engineering_10030015.pdf
+
+# A single file vs. its ground truth (computes per-field metrics)
+make eval FILE=eval/dataset/resumes/engineering_10030015.pdf \
+          TRUTH=eval/dataset/ground_truth/engineering_10030015.json
+
+# Pick a different model for an A/B run
 make eval DATASET=eval/dataset MODEL=claude-haiku-4-5
 
-# Ranking test against a JD-pair directory
+# Ranking test against a JD-pair directory (jd.md + resumes/ + expected_ranking.json)
 make eval-rank JDPAIR=eval/dataset/jd_pairs/python_ml
 ```
 
 Output: a summary table (name/email exact-match, YOE MAE, skills F1,
 education match, Spearman rho for rankings) and per-file JSON artifacts
-under `eval/out/<timestamp>/`.
+under `eval/out/<timestamp>/`. Files without a matching ground-truth JSON
+still get a prediction artifact written; they're just skipped from the
+metric averages.
 
 ---
 
@@ -322,9 +360,12 @@ Manage the two learned dictionaries:
 - **Skill aliases** — view + add + delete entries in the `entity_alias`
   table. Recruiter corrections (when alias-learning is opted in) show up
   here with `source = user_correction`.
-- **Custom fields** — define optional schema extensions
-  (`name`, `type`, `description`). Definitions are injected into the
-  extraction prompt; values land under the `custom` object.
+- **Custom fields** — define **global** schema extensions
+  (`name`, `type`, `description`) that apply to every extraction.
+  **JD-specific** custom fields live on the Job Description page instead;
+  they're only injected into the prompt when a resume is being scored
+  against that JD, and the JD page has a "Re-run extraction" button to
+  re-process historical resumes after the recruiter changes them.
 
 ---
 
@@ -353,6 +394,9 @@ API endpoints worth knowing:
 - `GET    /api/jd`                            — list JDs (title + timestamps)
 - `GET    /api/jd/{id}`, `POST /api/jd`,
   `PUT /api/jd/{id}`, `DELETE /api/jd/{id}`   — JD CRUD; delete cascades to all resumes scored against that JD
+- `GET    /api/jd/{id}/custom_fields`,
+  `POST /api/jd/{id}/custom_fields`           — JD-scoped custom fields (only injected for resumes targeting that JD)
+- `POST   /api/jd/{id}/reextract`             — re-queue extraction for every resume under this JD (use after editing custom fields)
 - `GET    /api/resumes`                       — list resumes; query: `jd_id`, `status_filter`, `tier`, `limit`, `offset`. Returns `{items, total, limit, offset}`
 - `GET    /api/resumes/{id}`                  — single resume + extraction
 - `GET    /api/resumes/{id}/file`             — original uploaded bytes

@@ -103,9 +103,15 @@ class CustomField(Base):
     __tablename__ = "custom_field"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(128), unique=True)
+    name: Mapped[str] = mapped_column(String(128))  # unique per JD scope
     description: Mapped[str] = mapped_column(Text)
     type: Mapped[str] = mapped_column(String(16))  # text|bool|list|number
+    # NULL = global custom field (legacy / applies to every extraction).
+    # Non-null = field is scoped to a single JD; only injected into the
+    # extraction prompt when the resume is being scored against that JD.
+    job_description_id: Mapped[int | None] = mapped_column(
+        ForeignKey("job_description.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
 

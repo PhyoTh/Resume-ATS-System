@@ -435,3 +435,98 @@ Tests:
 - Bumped `extract-v5` → `extract-v6` in the version assertion.
 
 Final verification: `make test` → 27/27 passed; `make check` clean.
+
+---
+
+## Turn 7 — Bug-fix bundle, per-JD custom fields, eval dataset, requirements audit
+
+**User (paraphrase):**
+
+1. Drag-and-drop into the Upload box doesn't work (only click).
+2. Big bug: after applying a skill correction with the alias-learning
+   checkbox, deleting the resume returns 500. Same when deleting the
+   parent JD. Also `FastAPI → fastapi` in the skills field never appears
+   in the alias list — the save itself isn't working.
+3. Custom-field schema should be per-JD, not global. Move the editor onto
+   the Job Description page; add a button there to re-run AI extraction
+   on every resume under that JD.
+4. Verify the assignment requirements for the April 24 initial submission
+   are met. Kaggle resume PDFs are in `archive/` — use a few for the eval
+   dataset.
+
+**Assistant (summary):**
+
+Bug fixes:
+
+- **Drag-and-drop** rebuilt as a real `DropZone` component on the Upload
+  page with `onDragEnter` / `onDragOver` / `onDragLeave` / `onDrop`
+  handlers (the previous version was just a `<label>` wrapping a hidden
+  file input, which only handles click). Drop target highlights blue
+  while a file is hovering and reads the dropped `FileList`.
+- **Alias case-only correction**: the bug was a case-insensitive equality
+  check at TWO sites — `learn_from_skill_diff` had
+  `if raw.lower() == edited.lower(): continue` (and same for education).
+  `_upsert_alias` had a similar guard. All three now compare
+  case-sensitively, so `FastAPI → fastapi` actually records an alias.
+  Added two regression tests:
+  `test_learn_skill_records_case_only_correction` and
+  `test_learn_skill_skips_no_op`.
+- **Delete 500 after edits**: `CorrectionLog` rows have a FK to `Resume`
+  with no relationship cascade, and we run SQLite with FK enforcement on,
+  so deleting a Resume that had any saved correction blew up the FK
+  constraint — and JD delete (which cascades to its resumes) failed for
+  the same reason. Both delete handlers now explicitly clear
+  `correction_log` rows for the affected resume IDs before deleting.
+
+Per-JD custom fields:
+
+- New `custom_field.job_description_id` column (nullable; NULL = global,
+  non-null = JD-scoped). Inline SQLite migration on startup so existing
+  databases pick up the column.
+- `_load_custom_fields(db, jd_id=...)` returns global + JD-matched fields
+  only. The pipeline (`extract` and `extract_async`) takes a `jd_id`
+  parameter, threaded from the resume's `task.job_description_id`.
+- New endpoints: `GET /api/jd/{id}/custom_fields`,
+  `POST /api/jd/{id}/custom_fields`,
+  `POST /api/jd/{id}/reextract` (202 + `{queued, task_ids}`).
+  The reextract endpoint resets each resume's extraction state and
+  enqueues a fresh `ResumeProcessingTask` per resume scoped to the JD.
+- The legacy global `POST /api/custom_fields` still works (creates a
+  field with `job_description_id=NULL`), and the `CustomFieldOut` model
+  surfaces the scope so the Schema page can display where each field
+  lives.
+- Frontend: `api.listJDCustomFields`, `api.createJDCustomField`,
+  `api.reextractJD`. JD page got a new `CustomFieldsCard` under the edit
+  form (only shows when editing an existing JD): list of fields, an
+  add-field row, and the "Re-run extraction on all resumes" button with
+  a confirm dialog warning that recruiter edits will be overwritten.
+- Three new tests in `test_custom_field_scope.py` cover:
+  global field visible everywhere; JD-scoped field invisible to other
+  JDs and to parse-only; loader combines global + scoped.
+
+Eval dataset:
+
+- Copied 8 PDFs out of `archive/data/data/` into `eval/dataset/resumes/`
+  (one per category: engineering, digital-media, healthcare, teacher,
+  finance, sales, designer, arts) with category-prefixed filenames.
+- Added two negatives in `eval/dataset/negatives/`: `invoice.txt` and
+  `recipe.txt`, with matching `is_resume: false` ground-truth JSONs.
+- Hand-labelled `engineering_10030015.json` for the first PDF (companies
+  are anonymized in the source, so the label only asserts experience
+  count + role titles + the one explicit skill, "LabView").
+- Extended `eval/harness.py`'s file filter to accept `.txt` / `.md` so
+  text negatives can sit next to PDFs.
+- Wrote `eval/dataset/README.md` explaining layout, how to run, and the
+  deliberate trade-off of "one labelled example, the rest are smoke
+  tests" (vs. labelling 200+ Kaggle PDFs by hand).
+
+Docs:
+
+- README: added the per-JD custom-fields + reextract endpoints to the
+  API reference; updated the Schema page section to clarify the
+  global-vs-JD split.
+- DESIGN.md: two new sections — `Per-JD custom fields (not global)` and
+  `Eval dataset (small + diverse, not exhaustive)`.
+- This appendix written.
+
+Final verification: `make test` → 32/32 passed; `make check` clean.

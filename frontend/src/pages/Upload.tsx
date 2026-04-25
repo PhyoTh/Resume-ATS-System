@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, JDSummary, Resume } from '../api';
 
@@ -207,23 +207,8 @@ export default function Upload() {
                 </p>
             </div>
 
-            <label className="block border-2 border-dashed rounded-lg p-12 text-center cursor-pointer bg-white hover:bg-slate-50">
-                <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.docx,.png,.jpg,.jpeg"
-                    className="hidden"
-                    onChange={(e) => onFiles(e.target.files)}
-                />
-                <div className="text-slate-600">
-                    <span className="text-lg">
-                        Drop files here or click to select
-                    </span>
-                    <div className="text-sm text-slate-400 mt-1">
-                        PDF, DOCX, PNG, JPG
-                    </div>
-                </div>
-            </label>
+            <DropZone onFiles={onFiles} />
+
 
             <p className="text-sm text-slate-500">
                 Uploaded files are persisted in the backend database. If you
@@ -448,6 +433,71 @@ export default function Upload() {
                     </tbody>
                 </table>
             )}
+        </div>
+    );
+}
+
+function DropZone({ onFiles }: { onFiles: (files: FileList | null) => void }) {
+    const [dragging, setDragging] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const onDragEnter = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer?.types?.includes('Files')) setDragging(true);
+    };
+    const onDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Required so drop fires; setting dropEffect tells the OS we accept it.
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    };
+    const onDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Only clear when actually leaving the zone (not crossing children).
+        if (e.currentTarget === e.target) setDragging(false);
+    };
+    const onDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragging(false);
+        const files = e.dataTransfer?.files ?? null;
+        onFiles(files);
+    };
+
+    return (
+        <div
+            onClick={() => inputRef.current?.click()}
+            onDragEnter={onDragEnter}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className={
+                'block border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ' +
+                (dragging
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-300 bg-white hover:bg-slate-50')
+            }
+        >
+            <input
+                ref={inputRef}
+                type="file"
+                multiple
+                accept=".pdf,.docx,.png,.jpg,.jpeg"
+                className="hidden"
+                onChange={(e) => onFiles(e.target.files)}
+            />
+            <div className="text-slate-600 pointer-events-none">
+                <span className="text-lg">
+                    {dragging
+                        ? 'Release to upload'
+                        : 'Drop files here or click to select'}
+                </span>
+                <div className="text-sm text-slate-400 mt-1">
+                    PDF, DOCX, PNG, JPG
+                </div>
+            </div>
         </div>
     );
 }

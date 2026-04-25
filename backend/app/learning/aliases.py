@@ -16,7 +16,12 @@ from app.db.models import CorrectionLog, EntityAlias
 def _upsert_alias(db: Session, alias: str, canonical: str, kind: str) -> None:
     alias_key = alias.strip().lower()
     canonical_v = canonical.strip()
-    if not alias_key or not canonical_v or alias_key == canonical_v.lower():
+    if not alias_key or not canonical_v:
+        return
+    # Skip only when nothing meaningfully changed. Compare CASE-SENSITIVE so
+    # that case-only canonicalizations (e.g. raw "FastAPI" → edited "fastapi"
+    # or raw "react" → edited "React") still get recorded as aliases.
+    if alias.strip() == canonical_v:
         return
     existing = (
         db.query(EntityAlias)
@@ -50,7 +55,9 @@ def learn_from_skill_diff(db: Session, raw_skills: list[str], edited_skills: lis
     for raw, edited in zip(raw_skills or [], edited_skills or []):
         if not isinstance(raw, str) or not isinstance(edited, str):
             continue
-        if raw.strip().lower() == edited.strip().lower():
+        # Compare case-sensitively so that case-only canonicalizations
+        # (e.g. "FastAPI" → "fastapi") are still treated as a real edit.
+        if raw.strip() == edited.strip():
             continue
         _upsert_alias(db, raw, edited, kind="skill")
         added += 1
@@ -71,7 +78,7 @@ def learn_from_education_diff(db: Session, raw_edu: list[dict], edited_edu: list
         ):
             rv, ev = raw.get(source_key), edited.get(source_key)
             if isinstance(rv, str) and isinstance(ev, str):
-                if rv.strip().lower() != ev.strip().lower():
+                if rv.strip() != ev.strip():
                     _upsert_alias(db, rv, ev, kind=kind)
                     added += 1
     return added

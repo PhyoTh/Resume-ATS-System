@@ -108,8 +108,12 @@ def run(
         if not root.exists():
             console.print(f"[red]no such directory: {root}[/red]")
             raise typer.Exit(2)
+        # `.txt` and `.md` are accepted so negative examples (invoices,
+        # recipes, blank docs) can live alongside real resumes without
+        # tripping the filter.
+        accepted = {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".txt", ".md"}
         for p in sorted(root.iterdir()):
-            if p.is_file() and p.suffix.lower() in {".pdf", ".docx", ".png", ".jpg", ".jpeg"}:
+            if p.is_file() and p.suffix.lower() in accepted:
                 items.append((p, _resolve_truth_path(p, dataset)))
     else:
         console.print("[red]must pass --file or --dataset[/red]")

@@ -1,0 +1,14 @@
+INVOICE #INV-2025-0042
+Date: 2025-04-12
+Bill To: Acme Corp, 123 Market Street, San Francisco, CA 94103
+
+Description                          Qty     Unit Price     Total
+Consulting services (March 2025)     40      $150.00        $6,000.00
+Travel reimbursement                  1      $432.50        $432.50
+
+                                              Subtotal:     $6,432.50
+                                              Tax (8.5%):   $546.76
+                                              Total Due:    $6,979.26
+
+Payment terms: Net 30. Make checks payable to Globex Consulting LLC.
+Questions? billing@globex-consulting.example

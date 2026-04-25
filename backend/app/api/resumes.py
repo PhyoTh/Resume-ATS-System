@@ -22,7 +22,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.db.models import JobDescription, Resume, ResumeProcessingTask
+from app.db.models import (
+    CorrectionLog,
+    JobDescription,
+    Resume,
+    ResumeProcessingTask,
+)
 from app.db.session import SessionLocal, get_db
 from app.extraction.parse_doc import guess_mime
 from app.extraction.pipeline import extract_async
@@ -266,6 +271,7 @@ async def _process_resume_task(task_id: str) -> None:
             resume.storage_path,
             db,
             progress_callback=_on_progress,
+            jd_id=task.job_description_id,
         )
 
         resume.mime_type = result.mime
@@ -700,6 +706,12 @@ def delete_resume(resume_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "resume not found")
 
     storage = Path(r.storage_path) if r.storage_path else None
+    # CorrectionLog has no relationship cascade, and SQLite FK enforcement
+    # is on, so we have to clear correction rows explicitly. Otherwise the
+    # delete fails with a 500 once the recruiter has saved any edits.
+    db.query(CorrectionLog).filter(
+        CorrectionLog.resume_id == resume_id
+    ).delete(synchronize_session=False)
     db.delete(r)
     db.commit()
 

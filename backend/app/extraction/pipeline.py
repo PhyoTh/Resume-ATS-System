@@ -49,8 +49,22 @@ def _load_top_aliases(db: Session, limit: int) -> dict[str, str]:
     return {r.alias: r.canonical for r in rows}
 
 
-def _load_custom_fields(db: Session) -> list[dict]:
-    rows = db.query(CustomField).all()
+def _load_custom_fields(db: Session, jd_id: int | None = None) -> list[dict]:
+    """Load the custom fields the model should be told about for this run.
+
+    A field with `job_description_id IS NULL` is global — included on every
+    extraction. A field with a specific `job_description_id` is included
+    ONLY when the resume is being scored against that JD.
+    """
+    q = db.query(CustomField)
+    if jd_id is None:
+        q = q.filter(CustomField.job_description_id.is_(None))
+    else:
+        q = q.filter(
+            (CustomField.job_description_id.is_(None))
+            | (CustomField.job_description_id == jd_id)
+        )
+    rows = q.order_by(CustomField.id.asc()).all()
     return [
         {"name": r.name, "description": r.description, "type": r.type} for r in rows
     ]
@@ -74,6 +88,7 @@ def extract(
     model: str | None = None,
     aliases_override: dict[str, str] | None = None,
     custom_fields_override: list[dict] | None = None,
+    jd_id: int | None = None,
 ) -> ExtractionResult:
     settings = get_settings()
     path = Path(file_path)
@@ -83,8 +98,9 @@ def extract(
     if aliases is None:
         aliases = _load_top_aliases(db, settings.max_alias_injection)
     custom_fields = (
-        custom_fields_override if custom_fields_override is not None else _load_custom_fields(
-            db)
+        custom_fields_override
+        if custom_fields_override is not None
+        else _load_custom_fields(db, jd_id=jd_id)
     )
 
     system_prompt = build_extraction_system_prompt(
@@ -199,6 +215,7 @@ async def extract_async(
     aliases_override: dict[str, str] | None = None,
     custom_fields_override: list[dict] | None = None,
     progress_callback: Callable[[str], object] | None = None,
+    jd_id: int | None = None,
 ) -> ExtractionResult:
     """Async variant for API/background processing with progress updates.
 
@@ -213,8 +230,9 @@ async def extract_async(
     if aliases is None:
         aliases = _load_top_aliases(db, settings.max_alias_injection)
     custom_fields = (
-        custom_fields_override if custom_fields_override is not None else _load_custom_fields(
-            db)
+        custom_fields_override
+        if custom_fields_override is not None
+        else _load_custom_fields(db, jd_id=jd_id)
     )
 
     system_prompt = build_extraction_system_prompt(

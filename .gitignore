@@ -18,6 +18,7 @@ dist/
 .vite/
 
 # Data (runtime)
+archive
 data/uploads/*
 !data/uploads/.gitkeep
 data/app.db

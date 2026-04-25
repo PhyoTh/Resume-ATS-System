@@ -52,11 +52,25 @@ def _ensure_resume_status_column() -> None:
             )
 
 
+def _ensure_custom_field_jd_column() -> None:
+    """Add the per-JD scope column to existing custom_field tables."""
+    with engine.begin() as conn:
+        cols = conn.exec_driver_sql(
+            "PRAGMA table_info(custom_field)"
+        ).fetchall()
+        names = {row[1] for row in cols}
+        if "job_description_id" not in names:
+            conn.exec_driver_sql(
+                "ALTER TABLE custom_field ADD COLUMN job_description_id INTEGER REFERENCES job_description(id)"
+            )
+
+
 # Create tables on startup — SQLite, single-recruiter. Alembic hooked in later.
 Base.metadata.create_all(engine)
 if settings.db_url.startswith("sqlite"):
     _ensure_jd_updated_at_column()
     _ensure_resume_status_column()
+    _ensure_custom_field_jd_column()
 with SessionLocal() as _db:
     seed_aliases(_db)
 

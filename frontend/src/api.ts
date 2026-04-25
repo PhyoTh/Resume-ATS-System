@@ -155,6 +155,7 @@ export interface CustomField {
     name: string;
     description: string;
     type: 'text' | 'bool' | 'list' | 'number';
+    job_description_id?: number | null;
 }
 
 export interface DashboardStats {
@@ -199,6 +200,23 @@ export const api = {
     deleteJD: (id: number) =>
         fetch(`/api/jd/${id}`, { method: 'DELETE' }).then((r) =>
             json<{ ok: boolean; deleted_resumes: number }>(r),
+        ),
+    listJDCustomFields: (id: number) =>
+        fetch(`/api/jd/${id}/custom_fields`).then((r) =>
+            json<CustomField[]>(r),
+        ),
+    createJDCustomField: (
+        id: number,
+        body: Omit<CustomField, 'id' | 'job_description_id'>,
+    ) =>
+        fetch(`/api/jd/${id}/custom_fields`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }).then((r) => json<CustomField>(r)),
+    reextractJD: (id: number) =>
+        fetch(`/api/jd/${id}/reextract`, { method: 'POST' }).then((r) =>
+            json<{ queued: number; task_ids: string[] }>(r),
         ),
 
     listResumes: (params: {
