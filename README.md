@@ -14,7 +14,7 @@ Full design rationale lives in [DESIGN.md](DESIGN.md).
 
 ## Demo Video
 
-- [Watch the demo video](PASTE_DEMO_VIDEO_URL_HERE)
+- [Watch the demo video](https://youtu.be/kJEA5q77uNQ)
 
 ---
 
