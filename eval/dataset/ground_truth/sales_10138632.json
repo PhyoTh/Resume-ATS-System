@@ -39,7 +39,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Emergency Road Service Technician",
             "start_date": "July 2007",
             "end_date": "March 2010",
@@ -97,9 +97,14 @@
     ],
     "projects": [],
     "technical_skills": [
-        "Computers and Electronics"
+        "Computers and Electronics",
+        "Administration and Management",
+        "Crticial Thinking",
+        "Negotiation",
+        "Persuasion",
+        "Sales and Marketing"
     ],
     "awards": [],
     "certificates": [],
-    "calculated_yoe": 21.42
+    "calculated_yoe": 21.17
 }

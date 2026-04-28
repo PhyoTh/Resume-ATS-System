@@ -28,7 +28,7 @@
     ],
     "experience": [
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Engineering Lab Technician",
             "start_date": "October 2016",
             "end_date": "Present",
@@ -65,7 +65,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Munitions Systems Journeyman",
             "start_date": "March 2003",
             "end_date": "March 2007",
@@ -92,5 +92,5 @@
         "LabView Course 1 training",
         "Lean Six Sigma/5s"
     ],
-    "calculated_yoe": 23.0
+    "calculated_yoe": 23.2
 }

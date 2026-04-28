@@ -10,7 +10,7 @@
     },
     "education": [
         {
-            "institution": "University of Washington",
+            "institution": null,
             "degree": null,
             "major": "DIG (Discoveries in Geosciences) Field School",
             "gpa": null,
@@ -18,9 +18,17 @@
             "end_date": "August 2016"
         },
         {
+            "institution": "University of Washington",
+            "degree": "Post-Bachelors Teaching Certification Program: Secondary Education",
+            "major": null,
+            "gpa": null,
+            "start_date": null,
+            "end_date": "March 2011"
+        },
+        {
             "institution": "Drexel University School of Education",
-            "degree": "Post-Bachelors Teaching Certification Program",
-            "major": "Secondary Education",
+            "degree": null,
+            "major": "CEAS Biology",
             "gpa": null,
             "start_date": null,
             "end_date": "May 2011"
@@ -36,7 +44,7 @@
     ],
     "experience": [
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Biology Teacher",
             "start_date": "November 2016",
             "end_date": "Present",
@@ -50,7 +58,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Biology Teacher",
             "start_date": "September 2011",
             "end_date": "November 2016",
@@ -67,7 +75,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Student Teacher",
             "start_date": "January 2011",
             "end_date": "March 2011",
@@ -80,7 +88,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Clinical Lab Manager/Technologist",
             "start_date": "April 2007",
             "end_date": "April 2011",
@@ -111,7 +119,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Clinical Laboratory Technician",
             "start_date": "January 2005",
             "end_date": "August 2005",
@@ -126,21 +134,45 @@
     "projects": [],
     "technical_skills": [
         "Anatomy",
-        "aseptic techniques",
+        "Aseptic Techniques",
         "Biology",
-        "calculators",
-        "calibration",
-        "database",
+        "Calculators",
+        "Calibration",
+        "Content",
+        "Credit",
+        "Database",
+        "Department of Health",
         "DNA",
-        "equipment maintenance",
+        "Educator",
+        "English",
+        "Equipment Maintenance",
+        "Forms",
+        "Forth",
         "Good Laboratory Practices",
-        "laboratory procedures",
-        "laboratory tests",
+        "Instruction",
+        "Interpretation",
+        "Laboratory Procedures",
+        "Laboratory Tests",
+        "Lesson Plans",
+        "Director",
+        "Materials",
+        "Money",
+        "Pathology",
         "PCR",
-        "Real-Time PCR",
-        "Physiology",
-        "QA/QC",
-        "Statistics"
+        "Physiology I",
+        "Progress",
+        "QA",
+        "Real-Time",
+        "Reporting",
+        "Research",
+        "Selling",
+        "Statistics",
+        "Teaching",
+        "Technician",
+        "Troubleshoot",
+        "Workshops",
+        "Composition I",
+        "Composition"
     ],
     "awards": [
         "Member of Golden Key International Honor Society"

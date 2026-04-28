@@ -36,7 +36,7 @@
     ],
     "experience": [
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Tutoring Consultant",
             "start_date": "August 2014",
             "end_date": "Present",
@@ -70,7 +70,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Social Studies Teacher",
             "start_date": "June 2007",
             "end_date": "June 2013",
@@ -111,7 +111,7 @@
             ]
         },
         {
-            "company": "Company Name 1/4",
+            "company": "Company Name",
             "role": "Prevention Specialist",
             "start_date": "June 2000",
             "end_date": "June 2002",
@@ -140,15 +140,19 @@
         }
     ],
     "projects": [],
-    "technical_skills": [],
+    "technical_skills": ["Leadership/communication Skills", 
+                "Self-motivated",
+                "CPR Certified",
+                "Classroom Management",
+                "Crisis Management",
+                "Patient"
+],
     "awards": [],
     "certificates": [
-        "CPR Certified",
-        "F.E.M.A. certified",
         "N.Y.S. Permanent License for Social Studies 7-12",
         "N.Y.S. Professional License for Literacy Specialist k-12",
         "Mississippi License in Social Studies 7-12",
         "Mississippi License in Literacy K-12"
     ],
-    "calculated_yoe": 29.0
+    "calculated_yoe": 29.33
 }
