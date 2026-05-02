@@ -148,7 +148,7 @@ export default function UploadJD() {
                 <h2 className="text-lg font-semibold">Saved JDs</h2>
                 <p className="text-xs text-slate-500">
                     Click a row to edit. Deleting a JD also deletes every
-                    resume that was submitted under it.
+                    resume you uploaded against it.
                 </p>
                 <div className="border rounded bg-white divide-y">
                     {list.length === 0 && (
@@ -201,6 +201,13 @@ function CustomFieldsCard({ jdId }: { jdId: number }) {
     const [createError, setCreateError] = useState<string | null>(null);
     const [reextracting, setReextracting] = useState(false);
     const [reextractMsg, setReextractMsg] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editDraft, setEditDraft] = useState<{
+        name: string;
+        description: string;
+        type: CustomField['type'];
+    }>({ name: '', description: '', type: 'bool' });
+    const [editError, setEditError] = useState<string | null>(null);
 
     const refresh = async () => {
         const rows = await api.listJDCustomFields(jdId);
@@ -209,6 +216,7 @@ function CustomFieldsCard({ jdId }: { jdId: number }) {
 
     useEffect(() => {
         setReextractMsg(null);
+        setEditingId(null);
         refresh().catch(() => setFields([]));
     }, [jdId]);
 
@@ -239,13 +247,48 @@ function CustomFieldsCard({ jdId }: { jdId: number }) {
     const remove = async (id: number, label: string) => {
         if (!confirm(`Delete custom field "${label}"? This can't be undone.`))
             return;
-        await api.deleteCustomField(id);
+        await api.deleteJDCustomField(jdId, id);
         await refresh();
+    };
+
+    const startEdit = (f: CustomField) => {
+        setEditingId(f.id);
+        setEditDraft({
+            name: f.name,
+            description: f.description,
+            type: f.type,
+        });
+        setEditError(null);
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditError(null);
+    };
+
+    const saveEdit = async (id: number) => {
+        const n = editDraft.name.trim();
+        const d = editDraft.description.trim();
+        if (!n || !d) {
+            setEditError('Name and description are required.');
+            return;
+        }
+        try {
+            await api.updateJDCustomField(jdId, id, {
+                name: n,
+                description: d,
+                type: editDraft.type,
+            });
+            cancelEdit();
+            await refresh();
+        } catch (e) {
+            setEditError(String(e));
+        }
     };
 
     const reextract = async () => {
         const ok = confirm(
-            `Re-run AI extraction on every resume submitted under this JD? ` +
+            `Re-run AI extraction on every resume uploaded against this JD? ` +
                 `This will overwrite existing extractions (recruiter edits ` +
                 `included) so the new custom fields get applied.`,
         );
@@ -297,30 +340,115 @@ function CustomFieldsCard({ jdId }: { jdId: number }) {
                 </div>
             ) : (
                 <ul className="divide-y border rounded">
-                    {fields.map((f) => (
-                        <li
-                            key={f.id}
-                            className="p-2 text-sm flex items-start gap-3"
-                        >
-                            <div className="flex-1">
-                                <div className="font-mono text-xs">
-                                    {f.name}{' '}
-                                    <span className="text-slate-400">
-                                        ({f.type})
-                                    </span>
-                                </div>
-                                <div className="text-xs text-slate-600 mt-0.5">
-                                    {f.description}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => remove(f.id, f.name)}
-                                className="text-xs text-red-600 hover:underline"
+                    {fields.map((f) => {
+                        const isEditing = editingId === f.id;
+                        return (
+                            <li
+                                key={f.id}
+                                className="p-2 text-sm flex items-start gap-3"
                             >
-                                delete
-                            </button>
-                        </li>
-                    ))}
+                                <div className="flex-1 space-y-1">
+                                    {isEditing ? (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-[1fr_120px] gap-2">
+                                                <input
+                                                    className="border rounded px-2 py-1 text-xs font-mono"
+                                                    value={editDraft.name}
+                                                    onChange={(e) =>
+                                                        setEditDraft({
+                                                            ...editDraft,
+                                                            name: e.target.value,
+                                                        })
+                                                    }
+                                                    autoFocus
+                                                />
+                                                <select
+                                                    className="border rounded px-2 py-1 text-xs"
+                                                    value={editDraft.type}
+                                                    onChange={(e) =>
+                                                        setEditDraft({
+                                                            ...editDraft,
+                                                            type: e.target
+                                                                .value as CustomField['type'],
+                                                        })
+                                                    }
+                                                >
+                                                    {FIELD_TYPES.map((t) => (
+                                                        <option key={t} value={t}>
+                                                            {t}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <input
+                                                className="border rounded px-2 py-1 text-xs w-full"
+                                                value={editDraft.description}
+                                                onChange={(e) =>
+                                                    setEditDraft({
+                                                        ...editDraft,
+                                                        description:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            />
+                                            {editError && (
+                                                <div className="text-xs text-red-600">
+                                                    {editError}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="font-mono text-xs">
+                                                {f.name}{' '}
+                                                <span className="text-slate-400">
+                                                    ({f.type})
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-slate-600">
+                                                {f.description}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="space-x-3 whitespace-nowrap">
+                                    {isEditing ? (
+                                        <>
+                                            <button
+                                                onClick={() => saveEdit(f.id)}
+                                                className="text-xs text-blue-600 hover:underline"
+                                            >
+                                                save
+                                            </button>
+                                            <button
+                                                onClick={cancelEdit}
+                                                className="text-xs text-slate-500 hover:underline"
+                                            >
+                                                cancel
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => startEdit(f)}
+                                                className="text-xs text-blue-600 hover:underline"
+                                            >
+                                                edit
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    remove(f.id, f.name)
+                                                }
+                                                className="text-xs text-red-600 hover:underline"
+                                            >
+                                                delete
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
 

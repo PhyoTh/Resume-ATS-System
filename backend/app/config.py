@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # TritonAI (OpenAI-compatible gateway provided by CSE 190)
     triton_api_key: str = ""
     triton_base_url: str = "https://tritonai-api.ucsd.edu/v1"
-    llm_model: str = "claude-sonnet-4-5"
+    llm_model: str = "claude-sonnet-4-6"
     llm_temperature: float = 0.0
     llm_timeout_seconds: float = 90.0
 

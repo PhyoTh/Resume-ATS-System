@@ -243,7 +243,7 @@ export default function Upload() {
                 </select>
                 <p className="text-xs text-slate-500">
                     Pick a JD to score the candidate against. Leave it blank
-                    to just test the resume parser without scoring.
+                    to just parse the resume without scoring.
                 </p>
             </div>
 
@@ -252,8 +252,8 @@ export default function Upload() {
 
             <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-slate-500">
-                    Uploaded files are persisted in the backend database. If
-                    you refresh, recent records are shown below.
+                    Uploaded resumes are saved to your local recruiter
+                    database. Recent ones are listed below for quick access.
                 </p>
                 {rejectedCount > 0 && (
                     <button

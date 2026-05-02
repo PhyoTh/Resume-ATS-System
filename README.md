@@ -53,9 +53,11 @@ cp .env.example .env
 ```
 
 Then edit `.env` and fill in `TRITON_API_KEY`. The default model is
-`claude-sonnet-4-5` — change `LLM_MODEL` if your TritonAI hub lists a different
-id. The backend will auto-fall back to an accessible Claude model if the
-configured one is denied.
+`claude-sonnet-4-6` — change `LLM_MODEL` if your TritonAI hub lists a different
+id (run `curl -H "Authorization: Bearer $TRITON_API_KEY" $TRITON_BASE_URL/models`
+to list what's allowed). The backend will auto-fall back to an accessible
+Claude model from `_PREFERRED_FALLBACK_MODELS` in
+`backend/app/extraction/llm_client.py` if the configured one is denied.
 
 ### 3. Sanity-check the install
 
@@ -269,7 +271,7 @@ make eval FILE=eval/dataset/resumes/engineering_10030015.pdf \
           TRUTH=eval/dataset/ground_truth/engineering_10030015.json
 
 # Pick a different model for an A/B run
-make eval DATASET=eval/dataset MODEL=claude-haiku-4-5
+make eval DATASET=eval/dataset MODEL=claude-opus-4-6-v1
 
 # Ranking test against a JD-pair directory (jd.md + resumes/ + expected_ranking.json)
 make eval-rank JDPAIR=eval/dataset/jd_pairs/python_ml
@@ -363,15 +365,18 @@ JD; that was removed once the dashboard learned to filter by JD.
 
 Manage the two learned dictionaries:
 
-- **Skill aliases** — view + add + delete entries in the `entity_alias`
-  table. Recruiter corrections (when alias-learning is opted in) show up
-  here with `source = user_correction`.
-- **Custom fields** — define **global** schema extensions
-  (`name`, `type`, `description`) that apply to every extraction.
+- **Skill aliases** — view, add, **edit inline**, and delete entries in
+  the `entity_alias` table. Click *edit* to rename a canonical without
+  having to delete and re-add. Recruiter corrections (when alias-learning
+  is opted in) show up here with `source = user_correction`.
+- **Custom fields (global)** — define schema extensions
+  (`name`, `type`, `description`) that apply to every extraction. Add,
+  **edit**, or delete each row inline on the Schema page.
   **JD-specific** custom fields live on the Job Description page instead;
   they're only injected into the prompt when a resume is being scored
   against that JD, and the JD page has a "Re-run extraction" button to
-  re-process historical resumes after the recruiter changes them.
+  re-process historical resumes after the recruiter changes them. The
+  JD-page custom-fields card has the same add / edit / delete affordance.
 
 ---
 
@@ -401,7 +406,9 @@ API endpoints worth knowing:
 - `GET    /api/jd/{id}`, `POST /api/jd`,
   `PUT /api/jd/{id}`, `DELETE /api/jd/{id}` — JD CRUD; delete cascades to all resumes scored against that JD
 - `GET    /api/jd/{id}/custom_fields`,
-  `POST /api/jd/{id}/custom_fields` — JD-scoped custom fields (only injected for resumes targeting that JD)
+  `POST /api/jd/{id}/custom_fields`,
+  `PUT /api/jd/{id}/custom_fields/{field_id}`,
+  `DELETE /api/jd/{id}/custom_fields/{field_id}` — JD-scoped custom field CRUD (only injected for resumes targeting that JD)
 - `POST   /api/jd/{id}/reextract` — re-queue extraction for every resume under this JD (use after editing custom fields)
 - `GET    /api/resumes` — list resumes; query: `jd_id`, `status_filter`, `tier`, `limit`, `offset`. Returns `{items, total, limit, offset}`
 - `GET    /api/resumes/{id}` — single resume + extraction
@@ -415,7 +422,7 @@ API endpoints worth knowing:
 - `PUT    /api/resumes/{id}/status` — update pipeline status (one of `Ready`, `Recruiter-Call`, `Round 1`, `Round 2`, `Final Round`, `Rejected`, `Awaiting Acceptance`, `Accepted`)
 - `GET    /api/resumes/_meta/statuses` — list of allowed status values
 - `GET    /api/aliases`, `POST`, `DELETE` — alias CRUD
-- `GET    /api/custom_fields`, `POST`, `DELETE` — custom-field CRUD
+- `GET    /api/custom_fields`, `POST`, `PUT /{id}`, `DELETE /{id}` — global custom-field CRUD
 - `GET    /api/dashboard/stats` — aggregate counts (legacy, no longer rendered on the Dashboard)
 
 ---

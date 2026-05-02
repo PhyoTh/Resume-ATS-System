@@ -20,9 +20,9 @@ from app.config import get_settings
 log = logging.getLogger(__name__)
 
 _PREFERRED_FALLBACK_MODELS = (
-    "claude-sonnet-4-5",
+    "claude-sonnet-4-6",
+    "claude-sonnet-4-6-aws",
     "claude-opus-4-6-v1",
-    "claude-haiku-4-5",
 )
 
 

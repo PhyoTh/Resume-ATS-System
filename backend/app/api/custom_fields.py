@@ -66,6 +66,37 @@ def create(body: CustomFieldIn, db: Session = Depends(get_db)):
     )
 
 
+@router.put("/{field_id}", response_model=CustomFieldOut)
+def update(field_id: int, body: CustomFieldIn, db: Session = Depends(get_db)):
+    """Update a GLOBAL custom field's name, description, or type."""
+    row = db.get(CustomField, field_id)
+    if row is None:
+        raise HTTPException(404)
+    if row.job_description_id is not None:
+        raise HTTPException(
+            400,
+            "use PUT /api/jd/{jd_id}/custom_fields/{field_id} for JD-scoped fields",
+        )
+    if body.type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"type must be one of {sorted(ALLOWED_TYPES)}")
+    name = body.name.strip()
+    description = body.description.strip()
+    if not name or not description:
+        raise HTTPException(400, "name and description required")
+    row.name = name
+    row.description = description
+    row.type = body.type
+    db.commit()
+    db.refresh(row)
+    return CustomFieldOut(
+        id=row.id,
+        name=row.name,
+        description=row.description,
+        type=row.type,
+        job_description_id=row.job_description_id,
+    )
+
+
 @router.delete("/{field_id}")
 def delete(field_id: int, db: Session = Depends(get_db)):
     row = db.get(CustomField, field_id)

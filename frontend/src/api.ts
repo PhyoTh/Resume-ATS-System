@@ -214,6 +214,20 @@ export const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         }).then((r) => json<CustomField>(r)),
+    updateJDCustomField: (
+        jdId: number,
+        fieldId: number,
+        body: Omit<CustomField, 'id' | 'job_description_id'>,
+    ) =>
+        fetch(`/api/jd/${jdId}/custom_fields/${fieldId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }).then((r) => json<CustomField>(r)),
+    deleteJDCustomField: (jdId: number, fieldId: number) =>
+        fetch(`/api/jd/${jdId}/custom_fields/${fieldId}`, {
+            method: 'DELETE',
+        }).then((r) => json<{ ok: boolean }>(r)),
     reextractJD: (id: number) =>
         fetch(`/api/jd/${id}/reextract`, { method: 'POST' }).then((r) =>
             json<{ queued: number; task_ids: string[] }>(r),
@@ -312,6 +326,12 @@ export const api = {
     createCustomField: (body: Omit<CustomField, 'id'>) =>
         fetch('/api/custom_fields', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }).then((r) => json<CustomField>(r)),
+    updateCustomField: (id: number, body: Omit<CustomField, 'id'>) =>
+        fetch(`/api/custom_fields/${id}`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         }).then((r) => json<CustomField>(r)),

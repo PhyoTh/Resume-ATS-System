@@ -10,9 +10,9 @@
     },
     "education": [
         {
-            "institution": null,
+            "institution": "DIG (Discoveries in Geosciences) Field School",
             "degree": null,
-            "major": "DIG (Discoveries in Geosciences) Field School",
+            "major": null,
             "gpa": null,
             "start_date": null,
             "end_date": "August 2016"

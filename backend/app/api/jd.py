@@ -265,6 +265,74 @@ def create_jd_custom_field(
     return _custom_field_out(row)
 
 
+@router.put(
+    "/{jd_id}/custom_fields/{field_id}",
+    response_model=CustomFieldOut,
+)
+def update_jd_custom_field(
+    jd_id: int,
+    field_id: int,
+    body: CustomFieldIn,
+    db: Session = Depends(get_db),
+):
+    jd = db.get(JobDescription, jd_id)
+    if jd is None:
+        raise HTTPException(404, "JD not found")
+    row = db.get(CustomField, field_id)
+    if row is None or row.job_description_id != jd_id:
+        raise HTTPException(404, "custom field not found for this JD")
+    if body.type not in ALLOWED_CUSTOM_FIELD_TYPES:
+        raise HTTPException(
+            422,
+            f"type must be one of {sorted(ALLOWED_CUSTOM_FIELD_TYPES)}",
+        )
+    name = body.name.strip()
+    description = body.description.strip()
+    if not name or not description:
+        raise HTTPException(422, "name and description are required")
+    if name != row.name:
+        clash = (
+            db.query(CustomField)
+            .filter(
+                CustomField.job_description_id == jd_id,
+                CustomField.name == name,
+                CustomField.id != field_id,
+            )
+            .first()
+        )
+        if clash:
+            raise HTTPException(
+                409,
+                f"a custom field named {name!r} already exists for this JD",
+            )
+    row.name = name
+    row.description = description
+    row.type = body.type
+    db.commit()
+    db.refresh(row)
+    jd.updated_at = datetime.utcnow()
+    db.commit()
+    return _custom_field_out(row)
+
+
+@router.delete("/{jd_id}/custom_fields/{field_id}")
+def delete_jd_custom_field(
+    jd_id: int,
+    field_id: int,
+    db: Session = Depends(get_db),
+):
+    jd = db.get(JobDescription, jd_id)
+    if jd is None:
+        raise HTTPException(404, "JD not found")
+    row = db.get(CustomField, field_id)
+    if row is None or row.job_description_id != jd_id:
+        raise HTTPException(404, "custom field not found for this JD")
+    db.delete(row)
+    jd.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------------------
 # Re-extract every resume scoped to this JD
 # (e.g. after the recruiter added or modified custom fields)

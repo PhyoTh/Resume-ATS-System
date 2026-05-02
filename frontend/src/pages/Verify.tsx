@@ -541,9 +541,9 @@ export default function Verify() {
 
                 <Group title="Concerns / questions to ask the candidate">
                     <p className="text-xs text-slate-500 -mt-1 mb-1">
-                        Neutral observations the recruiter may want to ask about
-                        (e.g. timeline gaps, very short tenures). Does not
-                        affect scoring.
+                        Neutral observations you may want to ask about during
+                        a phone screen (e.g. timeline gaps, very short
+                        tenures). Does not affect scoring.
                     </p>
                     <BulletsEditor
                         bullets={draft.concerns ?? []}
