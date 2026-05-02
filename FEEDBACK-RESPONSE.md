@@ -21,14 +21,14 @@
 
 - **What I did**: On resume upload, the hint now says "Uploaded resumes are saved to your local recruiter database" instead of "uploaded files are persisted in the backend database." On the Job Description page, "every resume that was submitted under it" became "every resume you uploaded against it". On the Verify page, the Concerns hint text now says recruiter directly as "you" rather than referring to "the recruiter" in third person. I also fixed the JD-page dialog "submitted under this JD" to "uploaded against this JD".
 - **Why**: The project is made for recruiters, but during the production I might have prompted in a way that made claude thinks that i am developing for the applicants instead. The reviewer found this confusing enough that he flagged it as the most-confusing thing about the implementation. So it's worth fixing even though it's not a code-level issue.
-- **Relevant commits**:
+- [Relevant commit](https://github.com/ucsd-cse-genai-programming-sp26/02-doc-scanner-phthant-assignment-2/commit/dc1c5af6166e111a6e8a9b72074f89bd77dcc165)
 
 ### 2. Edit on the Schema page + Global Custom Field — **Fixed**
 
 - **What I did**: I added the inline edit on the Schema page for skill aliases so the recruiters can now just click edit on a row to change the canonical without having to delete and re-add a new alias. There was no change in backend because POST /api/aliases was already doing upsert. 
 - I also added a global Custom Fields panel with full support for CRUD. I added PUT /api/custom_fields/{id}. For the existing JD related custom fields (which are managed on the Job Description page) I added PUT /api/jd/{jd_id}/custom_fields/{field_id} and DELETE /api/jd/{jd_id}/custom_fields/{field_id}. Then, I switched the JD related delete to use its own end point because it had been calling the global delete previously when the JD related delete route didn't exist.
 - **Why**:  I think this is really helpful for the recruiters to be able to update the fields in the alias otherwise they would have to delete, then re-add to update just one field. Due to this implmentation i also found a bug in JD related delete. Previously, the route didn't exist, but api.deleteCustomField(id) was deleting via the global route which worked because the row is in the same custom_field table.
-- **Relevant commits**: 
+- [Relevant commit](https://github.com/ucsd-cse-genai-programming-sp26/02-doc-scanner-phthant-assignment-2/commit/dc1c5af6166e111a6e8a9b72074f89bd77dcc165)
 
 ### 3. Don't store outputs in the backend; use localStorage — **Declined**
 
